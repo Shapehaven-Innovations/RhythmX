@@ -4,10 +4,11 @@ import SwiftUI
 
 struct ListViewRow: View {
     let event: Event
+    @EnvironmentObject var appSettings: AppSettings
 
     var body: some View {
         HStack(spacing: DS.Spacing.sm) {
-            PhaseNumberBadge(phase: event.eventType)
+            MoonPhaseView(phase: event.eventType.moonPhase, color: appSettings.phaseColor(for: event.eventType), size: 22)
 
             VStack(alignment: .leading, spacing: DS.Spacing.xs) {
                 Text(event.eventType.displayName)
@@ -19,9 +20,16 @@ struct ListViewRow: View {
                     .foregroundColor(DS.Color.secondaryText)
 
                 if !event.tags.isEmpty {
-                    Text("Tags: \(event.tags)")
-                        .font(DS.Font.caption)
-                        .foregroundColor(.accentColor)
+                    FlowLayout(spacing: DS.Spacing.xs) {
+                        ForEach(TagParser.chips(from: [event.tags])) { chip in
+                            Text(chip.label)
+                                .font(DS.Font.micro)
+                                .padding(.vertical, 3).padding(.horizontal, DS.Spacing.sm)
+                                .background(DS.Color.accent.opacity(0.12))
+                                .foregroundColor(DS.Color.accent)
+                                .clipShape(Capsule())
+                        }
+                    }
                 }
             }
 

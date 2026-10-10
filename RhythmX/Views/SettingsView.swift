@@ -5,81 +5,117 @@ import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject var appSettings: AppSettings
     @EnvironmentObject var archivedDataStore: ArchivedDataStore
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var notificationsDenied = false
 
     var body: some View {
         NavigationStack {
-            Form {
-                phaseColorsSection
-                notificationsSection
-                shareSection
-                aboutSection
+            ScrollView {
+                VStack(spacing: DS.Spacing.md) {
+                    privacyCard
+                    phaseColorsCard
+                    notificationsCard
+                    linksCard
+                }
+                .padding(DS.Spacing.md)
             }
+            .background(DS.Color.pageBackground.ignoresSafeArea())
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.large)
         }
     }
 
-    // MARK: - Phase Colors
-    private var phaseColorsSection: some View {
-        Section(header: Text("Phase Colors")) {
-            phaseColorRow(phase: .menstrual,  label: "Menstrual",  hex: $appSettings.phaseColor1)
-            phaseColorRow(phase: .follicular, label: "Follicular", hex: $appSettings.phaseColor2)
-            phaseColorRow(phase: .ovulation,  label: "Ovulation",  hex: $appSettings.phaseColor3)
-            phaseColorRow(phase: .luteal,     label: "Luteal",     hex: $appSettings.phaseColor4)
-
-            Button("Reset to Defaults") {
-                appSettings.resetToDefaults()
+    // MARK: - Privacy
+    private var privacyCard: some View {
+        HStack(alignment: .top, spacing: DS.Spacing.md) {
+            MoonPhaseView(phase: .full, color: Color(red: 240/255, green: 179/255, blue: 196/255), isActive: false, size: 32)
+            VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+                Text("Private by design")
+                    .font(DS.Font.sectionHeader)
+                Text("Everything stays on this device. No account. No ads. No tracking.")
+                    .font(DS.Font.caption)
+                    .opacity(0.85)
             }
-            .font(DS.Font.caption)
-            .foregroundColor(.accentColor)
+            Spacer(minLength: 0)
         }
+        .foregroundColor(Color.white)
+        .padding(DS.Spacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous).fill(Color(red: 94/255, green: 38/255, blue: 79/255)))
+        .accessibilityElement(children: .combine)
     }
 
-    private func phaseColorRow(
-        phase: Event.EventType,
-        label: String,
-        hex: Binding<String>
-    ) -> some View {
-        HStack(spacing: DS.Spacing.md) {
-            PhaseNumberBadge(phase: phase)
+    // MARK: - Phase Colors
+    private var phaseColorsCard: some View {
+        VStack(alignment: .leading, spacing: DS.Spacing.md) {
+            Text("Phase colors").font(DS.Font.sectionHeader).foregroundColor(DS.Color.primaryText)
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: DS.Spacing.md) {
+                    HStack(alignment: .top) {
+                        phaseColorMoon(.menstrual,  "Menstrual",  $appSettings.phaseColor1)
+                        phaseColorMoon(.follicular, "Follicular", $appSettings.phaseColor2)
+                    }
+                    HStack(alignment: .top) {
+                        phaseColorMoon(.ovulation,  "Ovulation",  $appSettings.phaseColor3)
+                        phaseColorMoon(.luteal,     "Luteal",     $appSettings.phaseColor4)
+                    }
+                }
+            } else {
+                HStack(alignment: .top) {
+                    phaseColorMoon(.menstrual,  "Menstrual",  $appSettings.phaseColor1)
+                    phaseColorMoon(.follicular, "Follicular", $appSettings.phaseColor2)
+                    phaseColorMoon(.ovulation,  "Ovulation",  $appSettings.phaseColor3)
+                    phaseColorMoon(.luteal,     "Luteal",     $appSettings.phaseColor4)
+                }
+            }
+            Button("Reset to Defaults") { appSettings.resetToDefaults() }
+                .font(DS.Font.caption)
+                .foregroundColor(.accentColor)
+        }
+        .cardStyle()
+    }
 
-            Text(label)
-                .font(DS.Font.label)
-                .foregroundColor(DS.Color.primaryText)
-
-            Spacer()
-
-            ColorPicker(
-                "",
-                selection: Binding(
+    private func phaseColorMoon(_ phase: Event.EventType, _ label: String, _ hex: Binding<String>) -> some View {
+        VStack(spacing: DS.Spacing.xs) {
+            ZStack {
+                MoonPhaseView(phase: phase.moonPhase, color: appSettings.phaseColor(for: phase), size: 36)
+                    .accessibilityHidden(true)
+                ColorPicker("\(label) color", selection: Binding(
                     get: { Color(hex: hex.wrappedValue) ?? phase.defaultPhaseColor },
                     set: { hex.wrappedValue = $0.hexString }
-                ),
-                supportsOpacity: false
-            )
-            .labelsHidden()
+                ), supportsOpacity: false)
+                .labelsHidden()
+                .opacity(0.02)
+                .frame(width: 44, height: 44)
+                .accessibilityLabel("\(label) color")
+            }
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
+            Text(label).font(DS.Font.micro).foregroundColor(DS.Color.secondaryText)
+                .lineLimit(1).minimumScaleFactor(0.7)
+                .accessibilityHidden(true)
         }
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Notifications
-    @ViewBuilder
-    private var notificationsSection: some View {
-        Section(header: Text("Notifications")) {
-            Toggle("Cycle Reminders", isOn: $appSettings.notificationsEnabled)
+    private var notificationsCard: some View {
+        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+            Text("Reminders").font(DS.Font.sectionHeader).foregroundColor(DS.Color.primaryText)
+            Toggle("Cycle reminders", isOn: $appSettings.notificationsEnabled)
+                .tint(DS.Color.accent)
                 .onChange(of: appSettings.notificationsEnabled) { _, enabled in
                     handleNotificationToggle(enabled: enabled)
                 }
-
             if appSettings.notificationsEnabled {
                 Toggle("Day before", isOn: $appSettings.notifyDayBefore)
+                    .tint(DS.Color.accent)
                     .font(DS.Font.label)
                     .onChange(of: appSettings.notifyDayBefore) { _, _ in reschedule() }
-
                 Toggle("Day of", isOn: $appSettings.notifyDayOf)
+                    .tint(DS.Color.accent)
                     .font(DS.Font.label)
                     .onChange(of: appSettings.notifyDayOf) { _, _ in reschedule() }
-
                 if notificationsDenied {
                     Label("Notifications are disabled. Enable them in iOS Settings.", systemImage: "exclamationmark.triangle")
                         .font(DS.Font.caption)
@@ -87,38 +123,34 @@ struct SettingsView: View {
                 }
             }
         }
+        .cardStyle()
     }
 
-    // MARK: - Share
-    private var shareSection: some View {
-        Section(header: Text("Share")) {
-            NavigationLink("Share Rhythm") {
-                ShareRhythmView()
-            }
-        }
-    }
-
-    // MARK: - About
-    private var aboutSection: some View {
-        Section(header: Text("About")) {
-            NavigationLink("Getting Started") {
-                GettingStartedView()
-            }
-
+    // MARK: - Links
+    private var linksCard: some View {
+        VStack(spacing: 0) {
+            NavigationLink { ShareRhythmView() } label: { linkRow("Share RhythmX") }
+            Divider()
+            NavigationLink { GettingStartedView() } label: { linkRow("How RhythmX works") }
+            Divider()
             HStack {
-                Text("Version")
-                    .font(DS.Font.label)
-                    .foregroundColor(DS.Color.primaryText)
+                Text("Version").font(DS.Font.label).foregroundColor(DS.Color.primaryText)
                 Spacer()
                 Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "-")
-                    .font(DS.Font.caption)
-                    .foregroundColor(DS.Color.secondaryText)
+                    .font(DS.Font.caption).foregroundColor(DS.Color.secondaryText)
             }
-
-            Text("All data stays on your device.")
-                .font(DS.Font.caption)
-                .foregroundColor(DS.Color.secondaryText)
+            .padding(.vertical, DS.Spacing.sm)
         }
+        .cardStyle()
+    }
+
+    private func linkRow(_ title: String) -> some View {
+        HStack {
+            Text(title).font(DS.Font.label).foregroundColor(DS.Color.primaryText)
+            Spacer()
+            Image(systemName: "chevron.right").font(DS.Font.caption).foregroundColor(DS.Color.tertiaryText)
+        }
+        .padding(.vertical, DS.Spacing.sm)
     }
 
     // MARK: - Notification helpers

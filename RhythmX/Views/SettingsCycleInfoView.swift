@@ -7,6 +7,7 @@ import SwiftUI
 struct SettingsCycleInfoView: View {
     @EnvironmentObject var eventStore: EventStore
     @EnvironmentObject var archivedDataStore: ArchivedDataStore
+    @EnvironmentObject var appSettings: AppSettings
 
     @State private var selectedStartDate: Date = Date()
     @State private var selectedCycleLength: Int = 28
@@ -17,42 +18,39 @@ struct SettingsCycleInfoView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section(header: Text("Menstrual Phases Info")) {
-                    NavigationLink("Learn more about phases") {
-                        PhasesFactsView()
-                    }
-                }
+            ScrollView {
+                VStack(spacing: DS.Spacing.md) {
+                    currentCycleCard
 
-                Section(header: Text("Cycle Information")) {
-                    DatePicker("First Day of Current Cycle", selection: $selectedStartDate, displayedComponents: .date)
-                    Stepper(value: $selectedCycleLength, in: 20...40) {
-                        Text("Cycle Length: \(selectedCycleLength) days")
+                    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+                        Text("Start a new cycle").font(DS.Font.sectionHeader).foregroundColor(DS.Color.primaryText)
+                        DatePicker("First day", selection: $selectedStartDate, displayedComponents: .date)
+                        Stepper(value: $selectedCycleLength, in: 20...40) {
+                            Text("Length: \(selectedCycleLength) days")
+                        }
+                        PrimaryButton(title: "Generate cycle") {
+                            if eventStore.events.isEmpty { generateEventsAndAlert() } else { showArchivePrompt = true }
+                        }
+                        Text("If you already have events, you'll be asked whether to archive them first.")
+                            .font(DS.Font.micro).foregroundColor(DS.Color.secondaryText)
                     }
-                }
+                    .cardStyle()
 
-                Section(
-                    header: Text("Generate Events"),
-                    footer: Text("Clears current events (with archive option) and generates new ones for the upcoming cycle.")
-                ) {
-                    PrimaryButton(title: "Generate Cycle Events") {
-                        if eventStore.events.isEmpty {
-                            generateEventsAndAlert()
-                        } else {
-                            showArchivePrompt = true
+                    VStack(spacing: 0) {
+                        NavigationLink { ArchivedDataView() } label: {
+                            row("Past cycles", trailing: "\(archivedDataStore.archivedBlocks.count)", moon: .waning)
+                        }
+                        Divider()
+                        NavigationLink { PhasesFactsView() } label: {
+                            row("Learn about phases", trailing: nil, moon: .full)
                         }
                     }
-                    .listRowInsets(EdgeInsets(top: DS.Spacing.sm, leading: DS.Spacing.md, bottom: DS.Spacing.sm, trailing: DS.Spacing.md))
-                    .listRowBackground(Color.clear)
+                    .cardStyle()
                 }
-
-                Section(header: Text("Archive & Insights")) {
-                    NavigationLink("View Archived Data") {
-                        ArchivedDataView()
-                    }
-                }
+                .padding(DS.Spacing.md)
             }
-            .navigationTitle("Manage")
+            .background(DS.Color.pageBackground.ignoresSafeArea())
+            .navigationTitle("Cycles")
             .alert("Cycle Events Generated", isPresented: $showCycleGeneratedAlert) {
                 Button("OK") {
                     eventStore.reloadCalendarIcons()
@@ -77,6 +75,37 @@ struct SettingsCycleInfoView: View {
         }
     }
 
+    private var stats: InsightsViewModel.CycleStats {
+        InsightsViewModel(events: eventStore.events, archivedBlocks: archivedDataStore.archivedBlocks, appSettings: appSettings).cycleStats()
+    }
+
+    private var currentCycleCard: some View {
+        HStack(spacing: DS.Spacing.md) {
+            PhaseRingView(cycleLength: stats.averageCycleLength ?? 28, currentPhase: stats.currentPhase)
+                .frame(width: 64, height: 64)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(stats.currentCycleDay.map { "Day \($0) of \(stats.averageCycleLength ?? 28)" } ?? "No active cycle")
+                    .font(DS.Font.sectionHeader).foregroundColor(DS.Color.primaryText)
+                if let next = stats.nextPeriodEstimate {
+                    Text(next.startOfDay < Date().startOfDay ? "Next period overdue" : "Next period \(next.formatted(.dateTime.month(.abbreviated).day()))")
+                        .font(DS.Font.caption).foregroundColor(DS.Color.secondaryText)
+                }
+            }
+            Spacer()
+        }
+        .cardStyle()
+    }
+
+    private func row(_ title: String, trailing: String?, moon: MoonPhase) -> some View {
+        HStack(spacing: DS.Spacing.sm) {
+            MoonPhaseView(phase: moon, color: DS.Color.accent, size: 16)
+            Text(title).font(DS.Font.label).foregroundColor(DS.Color.primaryText)
+            Spacer()
+            if let trailing { Text(trailing).font(DS.Font.caption).foregroundColor(DS.Color.secondaryText) }
+            Image(systemName: "chevron.right").font(DS.Font.caption).foregroundColor(DS.Color.tertiaryText)
+        }
+        .padding(.vertical, DS.Spacing.sm)
+    }
     private func archiveCurrentData() {
         guard !eventStore.events.isEmpty else { return }
 

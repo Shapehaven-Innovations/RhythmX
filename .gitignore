@@ -39,3 +39,6 @@ fastlane/test_output
 # Claude Code
 .claude/settings.local.json
 /docs
+
+# Brainstorming mockups
+.superpowers/

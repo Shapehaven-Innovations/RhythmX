@@ -119,8 +119,8 @@ struct InsightsViewModel {
         let colorMap: [String: Color] = [
             "Symptom": DS.Color.phase1Default, "Mood": DS.Color.phase4Default,
             "Dietary": DS.Color.phase3Default, "Exercise": DS.Color.phase2Default,
-            "Medication": Color.gray, "Cervical Mucus": Color.teal,
-            "Other": Color.gray.opacity(0.4)
+            "Medication": DS.Color.waveMid, "Cervical Mucus": DS.Color.waveBack,
+            "Other": DS.Color.secondaryText.opacity(0.4)
         ]
         var freq: [String: Int] = [:]
         let allEvents = events + archivedBlocks.flatMap { $0.groupedEvents.flatMap { $0.events } }
@@ -218,8 +218,8 @@ struct InsightsViewModel {
         [
             ("Symptom", DS.Color.phase1Default), ("Mood", DS.Color.phase4Default),
             ("Dietary", DS.Color.phase3Default), ("Exercise", DS.Color.phase2Default),
-            ("Medication", Color.gray), ("Cervical Mucus", Color.teal),
-            ("Other", Color.gray.opacity(0.5))
+            ("Medication", DS.Color.waveMid), ("Cervical Mucus", DS.Color.waveBack),
+            ("Other", DS.Color.secondaryText.opacity(0.4))
         ]
     }
 

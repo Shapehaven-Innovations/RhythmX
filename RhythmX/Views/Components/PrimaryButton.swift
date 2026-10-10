@@ -11,7 +11,7 @@ struct PrimaryButton: View {
         Button(action: action) {
             Text(title)
                 .font(DS.Font.label.weight(.semibold))
-                .foregroundColor(.white)
+                .foregroundColor(DS.Color.onAccent)
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
                 .background(isDisabled ? Color.accentColor.opacity(0.4) : Color.accentColor)

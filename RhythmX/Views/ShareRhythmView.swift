@@ -9,32 +9,36 @@ struct ShareRhythmView: View {
     @State private var shareError: String?
 
     var body: some View {
-        Form {
-            Section(header: Text("Your Name")) {
-                TextField("Your name", text: $appSettings.sharerName)
-                    .autocorrectionDisabled()
-            }
+        ScrollView {
+            VStack(spacing: DS.Spacing.md) {
+                VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+                    Text("Your name").font(DS.Font.sectionHeader).foregroundColor(DS.Color.primaryText)
+                    TextField("Your name", text: $appSettings.sharerName)
+                        .autocorrectionDisabled()
+                        .textFieldStyle(.roundedBorder)
+                }
+                .cardStyle()
 
-            Section(header: Text("Phases to Share")) {
-                if phaseRanges.isEmpty {
-                    Text("No active cycle to share. Generate a cycle first.")
-                        .font(DS.Font.caption)
-                        .foregroundColor(DS.Color.secondaryText)
-                } else {
-                    ForEach(phaseRanges) { range in
-                        PhaseCardHeader(
-                            phase: range.phase,
-                            startDate: range.start,
-                            endDate: range.end
-                        )
+                VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+                    Text("Phases to share").font(DS.Font.sectionHeader).foregroundColor(DS.Color.primaryText)
+                    if phaseRanges.isEmpty {
+                        Text("No active cycle to share. Start a cycle in Cycles first.")
+                            .font(DS.Font.caption).foregroundColor(DS.Color.secondaryText)
+                    } else {
+                        ForEach(phaseRanges) { range in
+                            PhaseCardHeader(phase: range.phase, startDate: range.start, endDate: range.end)
+                        }
                     }
                 }
+                .cardStyle()
             }
+            .padding(DS.Spacing.md)
         }
-        .navigationTitle("Share Rhythm")
+        .background(DS.Color.pageBackground.ignoresSafeArea())
+        .navigationTitle("Share RhythmX")
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) {
-            PrimaryButton(title: "Share Rhythm", action: share, isDisabled: phaseRanges.isEmpty)
+            PrimaryButton(title: "Share RhythmX", action: share, isDisabled: phaseRanges.isEmpty)
                 .padding(DS.Spacing.md)
                 .background(.regularMaterial)
         }

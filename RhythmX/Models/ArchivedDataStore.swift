@@ -65,6 +65,13 @@ class ArchivedDataStore: ObservableObject {
         saveArchivedData()
     }
 
+    /// Remove one archived cycle by id, then save. Unknown ids are ignored.
+    func deleteArchivedBlock(id: UUID) {
+        guard archivedBlocks.contains(where: { $0.id == id }) else { return }
+        archivedBlocks.removeAll { $0.id == id }
+        saveArchivedData()
+    }
+
     func updateArchivedEventTag(eventId: String, newTags: String) {
         for (blockIndex, block) in archivedBlocks.enumerated() {
             var didUpdate = false

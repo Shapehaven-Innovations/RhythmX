@@ -23,17 +23,18 @@ struct StartTabView: View {
                 .tag(1)
 
             EventsListView()
-                .tabItem { Label("Tag Management", systemImage: "tag.fill") }
+                .tabItem { Label("Tags", systemImage: "tag.fill") }
                 .tag(2)
 
             SettingsCycleInfoView()
-                .tabItem { Label("Manage", systemImage: "arrow.clockwise.circle") }
+                .tabItem { Label("Cycles", systemImage: "moon.circle") }
                 .tag(3)
 
             SettingsView()
                 .tabItem { Label("Settings", systemImage: "gearshape") }
                 .tag(4)
         }
+        .tint(DS.Color.accent)
         .alert("Data Error", isPresented: Binding(
             get: { persistenceErrorMessage != nil },
             set: { if !$0 {

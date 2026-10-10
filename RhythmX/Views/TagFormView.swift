@@ -27,6 +27,10 @@ struct TagFormView: View {
     @State private var tagDate = Date()
 
     @State private var smartTags: [String] = []
+
+    init(initialDate: Date = Date()) {
+        _tagDate = State(initialValue: initialDate)
+    }
     
     // Suggestion dictionary for quick symptom selection
     private let phaseSymptomSuggestions: [Event.EventType: [String]] = [
@@ -42,10 +46,16 @@ struct TagFormView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Picker("Category", selection: $category) {
-                    ForEach(TagCategory.allCases, id: \.self) { cat in
-                        Text(cat.rawValue).tag(cat)
+                Section(header: Text("Category")) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: DS.Spacing.sm) {
+                            ForEach(TagCategory.allCases, id: \.self) { cat in
+                                ChipButton(title: cat.rawValue, isSelected: category == cat) { category = cat }
+                            }
+                        }
+                        .padding(.vertical, DS.Spacing.xs)
                     }
+                    .listRowInsets(EdgeInsets(top: 0, leading: DS.Spacing.md, bottom: 0, trailing: DS.Spacing.md))
                 }
                 
                 TextField("Specific Type (e.g. 🍫)", text: $customType)
@@ -121,7 +131,9 @@ struct TagFormView: View {
                     }
                 }
             }
-            .navigationTitle("Add a New Tag")
+            .scrollContentBackground(.hidden)
+            .background(DS.Color.pageBackground)
+            .navigationTitle("Add a Tag")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     // === Check for duplicates first ===

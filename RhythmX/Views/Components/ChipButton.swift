@@ -11,7 +11,7 @@ struct ChipButton: View {
         Button(action: action) {
             Text(title)
                 .font(DS.Font.caption.weight(.medium))
-                .foregroundColor(isSelected ? .white : Color.accentColor)
+                .foregroundColor(isSelected ? DS.Color.onAccent : Color.accentColor)
                 .padding(.vertical, DS.Spacing.sm)
                 .padding(.horizontal, DS.Spacing.md)
                 .background(isSelected ? Color.accentColor : DS.Color.cardBackground)
