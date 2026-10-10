@@ -12,8 +12,25 @@ struct AppEntry: App {
 
     @AppStorage("didFinishOnboarding") var didFinishOnboarding = false
 
+    @State private var showSplash = true
+
     var body: some Scene {
         WindowGroup {
+            ZStack {
+                content
+                if showSplash {
+                    SplashView { withAnimation(.easeOut(duration: 0.45)) { showSplash = false } }
+                        .environmentObject(appSettings)
+                        .transition(.opacity)
+                        .zIndex(1)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        Group {
             if didFinishOnboarding {
                 StartTabView()
                     .environmentObject(myEvents)

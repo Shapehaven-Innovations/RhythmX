@@ -7,9 +7,9 @@ enum MoonPhase { case new, crescent, full, waning }
 extension Event.EventType {
     var moonPhase: MoonPhase {
         switch self {
-        case .menstrual:  return .new
+        case .menstrual:  return .full
         case .follicular: return .crescent
-        case .ovulation:  return .full
+        case .ovulation:  return .new
         case .luteal:     return .waning
         }
     }
@@ -21,10 +21,14 @@ struct MoonPhaseView: View {
     var isActive: Bool = false
     var size: CGFloat = 24
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var breathing = false
+
     var body: some View {
         ZStack {
             if isActive {
-                Circle().fill(color.opacity(0.22)).scaleEffect(1.35)
+                Circle().fill(color.opacity(breathing ? 0.30 : 0.18))
+                    .scaleEffect(breathing ? 1.45 : 1.3)
             }
             switch phase {
             case .new:
@@ -53,6 +57,10 @@ struct MoonPhaseView: View {
         }
         .frame(width: size, height: size)
         .accessibilityHidden(true)
+        .onAppear {
+            guard !reduceMotion else { return }
+            withAnimation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true)) { breathing = true }
+        }
     }
 }
 

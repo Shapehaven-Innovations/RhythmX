@@ -34,7 +34,7 @@ struct TagFormView: View {
     
     // Suggestion dictionary for quick symptom selection
     private let phaseSymptomSuggestions: [Event.EventType: [String]] = [
-        .menstrual:  ["Cramps", "Bloating", "Fatigue", "Headache", "Irritability"],
+        .menstrual:  ["Cramps", "Bloating", "Fatigue", "Headache", "Irritable"],
         .follicular: ["Increased Energy", "Clearer Thinking", "Higher Libido"],
         .ovulation:  ["Mittelschmerz", "Bloating", "Mild Cramping"],
         .luteal:     ["Mood Swings", "Breast Tenderness", "Food Cravings", "PMS"]
@@ -73,9 +73,9 @@ struct TagFormView: View {
                                     ForEach(suggestions, id: \.self) { suggestion in
                                         ChipButton(
                                             title: suggestion,
-                                            isSelected: customType == suggestion && category == .symptom
+                                            isSelected: customType == suggestion && category == suggestionCategory(suggestion)
                                         ) {
-                                            category = .symptom
+                                            category = suggestionCategory(suggestion)
                                             customType = suggestion
                                         }
                                     }
@@ -167,6 +167,11 @@ struct TagFormView: View {
                 buildSmartTags()
             }
         }
+    }
+
+    /// Suggestions default to Symptom unless they are a known mood tag (e.g. "Mood Swings").
+    private func suggestionCategory(_ suggestion: String) -> TagCategory {
+        (TagLibrary.tags[.mood] ?? []).contains(suggestion) ? .mood : .symptom
     }
 
     private var currentPhaseType: Event.EventType? {

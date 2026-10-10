@@ -35,6 +35,7 @@
 		8CE96C498F03FAEE752684CD /* CalendarMonthModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF9FEE3F86C40EFB16F2F559 /* CalendarMonthModel.swift */; };
 		8F0146EC3B12FC67CF85F48B /* TagParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 183D74EF5E4FAF4D48D11CDD /* TagParserTests.swift */; };
 		8FE4F603647BF1A10D643C11 /* InsightsViewModel+Stats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 367AF7B537C68EF6B0091FFE /* InsightsViewModel+Stats.swift */; };
+		9A0F1FD02D32BF4C00746E99 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0F1FD12D32BF4C00746E99 /* SplashView.swift */; };
 		9A0F1FC42D32BF4C00746E99 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0F1FC32D32BF4C00746E99 /* OnboardingView.swift */; };
 		9A0F1FC82D32C3A900746E99 /* GettingStartedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0F1FC72D32C3A900746E99 /* GettingStartedView.swift */; };
 		9A23E0FF2D288DB7008A0B8A /* PhasesFactsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A23E0FE2D288DB3008A0B8A /* PhasesFactsView.swift */; };
@@ -116,6 +117,7 @@
 		8C10E7AEDEEB58814E5B66F4 /* ArchivedDataStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ArchivedDataStoreTests.swift; sourceTree = "<group>"; };
 		92627CFFCECDA92C0114E2C5 /* InsightsViewModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InsightsViewModelTests.swift; sourceTree = "<group>"; };
 		98956941C504966F184775E7 /* NotificationScheduler.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = NotificationScheduler.swift; path = Services/NotificationScheduler.swift; sourceTree = "<group>"; };
+		9A0F1FD12D32BF4C00746E99 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 		9A0F1FC32D32BF4C00746E99 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		9A0F1FC72D32C3A900746E99 /* GettingStartedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GettingStartedView.swift; sourceTree = "<group>"; };
 		9A23E0FE2D288DB3008A0B8A /* PhasesFactsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhasesFactsView.swift; sourceTree = "<group>"; };
@@ -307,6 +309,7 @@
 				9A3972FC2D8F248E008E6743 /* PhaseTagsEditorView.swift */,
 				9A0F1FC72D32C3A900746E99 /* GettingStartedView.swift */,
 				9A0F1FC32D32BF4C00746E99 /* OnboardingView.swift */,
+				9A0F1FD12D32BF4C00746E99 /* SplashView.swift */,
 				9A4747F42D30B52600BB7C72 /* TagFormView.swift */,
 				9A23E1062D29C252008A0B8A /* ArchivedDataView.swift */,
 				9A23E0FE2D288DB3008A0B8A /* PhasesFactsView.swift */,
@@ -470,6 +473,7 @@
 				9ADBC1ED2D4D674800252EAE /* ArchivedDataStore.swift in Sources */,
 				9A4747F52D30B52B00BB7C72 /* TagFormView.swift in Sources */,
 				9A0F1FC42D32BF4C00746E99 /* OnboardingView.swift in Sources */,
+				9A0F1FD02D32BF4C00746E99 /* SplashView.swift in Sources */,
 				9A23E0FF2D288DB7008A0B8A /* PhasesFactsView.swift in Sources */,
 				9A6F3CB92CA717B1005D5328 /* Rhythm.swift in Sources */,
 				9A23E1072D29C256008A0B8A /* ArchivedDataView.swift in Sources */,
