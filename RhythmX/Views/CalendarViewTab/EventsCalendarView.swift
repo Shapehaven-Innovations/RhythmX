@@ -6,38 +6,52 @@ struct EventsCalendarView: View {
     @EnvironmentObject var eventStore: EventStore
     @EnvironmentObject var archivedDataStore: ArchivedDataStore
     @EnvironmentObject var appSettings: AppSettings
-    @State private var dateSelected: DateComponents?
-    @State private var displayEvents = false
+    @State private var dateSelected: Date?
     @State private var showNotificationPrompt = false
 
     private var daysUntilPrediction: Int? {
         CyclePredictionService.daysUntilPrediction(from: archivedDataStore.archivedBlocks)
     }
 
+    private var stats: InsightsViewModel.CycleStats {
+        InsightsViewModel(
+            events: eventStore.events,
+            archivedBlocks: archivedDataStore.archivedBlocks,
+            appSettings: appSettings
+        ).cycleStats()
+    }
+
+    private var legend: some View {
+        FlowLayout(spacing: DS.Spacing.md) {
+            ForEach(Event.EventType.allCases) { phase in
+                HStack(spacing: DS.Spacing.xs) {
+                    MoonPhaseView(phase: phase.moonPhase, color: appSettings.phaseColor(for: phase), size: 12)
+                    Text(phase.rawValue.capitalized)
+                        .font(DS.Font.micro)
+                        .foregroundColor(DS.Color.secondaryText)
+                }
+            }
+        }
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
-                if let days = daysUntilPrediction, days >= 0, days <= 3 {
-                    PredictionBannerView(daysUntil: days)
+                VStack(spacing: DS.Spacing.md) {
+                    if let days = daysUntilPrediction, days >= 0, days <= 3 {
+                        PredictionBannerView(daysUntil: days)
+                    }
+                    TodayCard(stats: stats)
+                    PhaseCalendarView(selectedDate: $dateSelected, predictedStart: stats.nextPeriodEstimate)
+                    legend
+                    if let selected = dateSelected {
+                        DayPanelView(date: selected)
+                    }
                 }
-
-                CalendarView(
-                    interval: DateInterval(start: .distantPast, end: .distantFuture),
-                    eventStore: eventStore,
-                    dateSelected: $dateSelected,
-                    displayEvents: $displayEvents
-                )
-                .id("\(eventStore.shouldReloadAll)-\(appSettings.phaseColor1)-\(appSettings.phaseColor2)-\(appSettings.phaseColor3)-\(appSettings.phaseColor4)")
-
-                Image("launchScreen")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 100)
+                .padding(DS.Spacing.md)
+                .padding(.bottom, DS.Spacing.xl)
             }
-            .sheet(isPresented: $displayEvents) {
-                DaysEventsListView(dateSelected: $dateSelected)
-                    .presentationDetents([.medium, .large])
-            }
+            .background(DS.Color.pageBackground.ignoresSafeArea())
             .navigationTitle("Calendar")
             .alert("Cycle Reminders", isPresented: $showNotificationPrompt) {
                 Button("Enable") {

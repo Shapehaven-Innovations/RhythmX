@@ -56,6 +56,8 @@ struct PhaseTagsEditorView: View {
                 }
             }
         }
+        .scrollContentBackground(.hidden)
+        .background(DS.Color.pageBackground)
         .navigationTitle("Edit \(phase.eventType.rawValue.capitalized) Tags")
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {

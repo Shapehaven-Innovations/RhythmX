@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="23504" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="01J-lp-oVM">
-    <device id="retina6_12" orientation="portrait" appearance="light"/>
+    <device id="retina6_12" orientation="portrait"/>
     <dependencies>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="23506"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
-        <!--View Controller-->
         <scene sceneID="EHf-IW-A2E">
             <objects>
                 <viewController id="01J-lp-oVM" sceneMemberID="viewController">
@@ -15,22 +14,34 @@
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Rhythm(x)" textAlignment="center" lineBreakMode="middleTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="title-label">
+                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="LaunchWaves" translatesAutoresizingMaskIntoConstraints="NO" id="waves-img">
+                                <rect key="frame" x="0.0" y="552" width="393" height="300"/>
+                            </imageView>
+                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="LaunchMoons" translatesAutoresizingMaskIntoConstraints="NO" id="moons-img">
+                                <rect key="frame" x="116" y="300" width="160" height="40"/>
+                            </imageView>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="RhythmX" textAlignment="center" lineBreakMode="middleTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="title-label">
                                 <rect key="frame" x="0.0" y="390" width="393" height="52"/>
                                 <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="42"/>
-                                <color key="textColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <color key="textColor" name="LaunchTitle"/>
                                 <nil key="highlightedColor"/>
                             </label>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="know your rhythm" textAlignment="center" lineBreakMode="middleTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="subtitle-label">
                                 <rect key="frame" x="0.0" y="452" width="393" height="24"/>
                                 <fontDescription key="fontDescription" type="system" weight="light" pointSize="18"/>
-                                <color key="textColor" red="0.949" green="0.839" blue="0.886" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <color key="textColor" name="LaunchSubtitle"/>
                                 <nil key="highlightedColor"/>
                             </label>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="Bcu-3y-fUS"/>
-                        <color key="backgroundColor" red="0.369" green="0.149" blue="0.310" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <color key="backgroundColor" name="LaunchBackground"/>
                         <constraints>
+                            <constraint firstItem="waves-img" firstAttribute="leading" secondItem="Ze5-6b-2t3" secondAttribute="leading" id="w1"/>
+                            <constraint firstItem="waves-img" firstAttribute="trailing" secondItem="Ze5-6b-2t3" secondAttribute="trailing" id="w2"/>
+                            <constraint firstItem="waves-img" firstAttribute="bottom" secondItem="Ze5-6b-2t3" secondAttribute="bottom" id="w3"/>
+                            <constraint firstItem="waves-img" firstAttribute="height" secondItem="waves-img" secondAttribute="width" multiplier="300:393" id="w4"/>
+                            <constraint firstItem="moons-img" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="m1"/>
+                            <constraint firstItem="title-label" firstAttribute="top" secondItem="moons-img" secondAttribute="bottom" constant="24" id="m2"/>
                             <constraint firstItem="title-label" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="cx1"/>
                             <constraint firstItem="title-label" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" constant="-20" id="cy1"/>
                             <constraint firstItem="title-label" firstAttribute="leading" secondItem="Ze5-6b-2t3" secondAttribute="leading" constant="24" id="lead1"/>
@@ -44,7 +55,20 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="iYj-Kq-Ea1" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="52.671755725190835" y="374.64788732394368"/>
+            <point key="canvasLocation" x="52.67" y="374.65"/>
         </scene>
     </scenes>
+    <resources>
+        <image name="LaunchMoons" width="160" height="40"/>
+        <image name="LaunchWaves" width="393" height="300"/>
+        <namedColor name="LaunchBackground">
+            <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+        </namedColor>
+        <namedColor name="LaunchSubtitle">
+            <color white="0.5" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+        </namedColor>
+        <namedColor name="LaunchTitle">
+            <color white="0.2" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+        </namedColor>
+    </resources>
 </document>

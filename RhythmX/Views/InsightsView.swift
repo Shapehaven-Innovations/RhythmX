@@ -3,6 +3,7 @@ import SwiftUI
 import Charts
 
 struct InsightsView: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @EnvironmentObject var archivedDataStore: ArchivedDataStore
     @EnvironmentObject var myEvents: EventStore
     @EnvironmentObject var appSettings: AppSettings
@@ -20,16 +21,13 @@ struct InsightsView: View {
                 if vm.events.isEmpty && vm.archivedBlocks.isEmpty {
                     emptyState
                 } else {
-                    VStack(alignment: .leading, spacing: DS.Spacing.xl) {
-                        tagFrequencyChart(vm)
-                        Divider()
-                        tagsOverMonthChart(vm)
-                        Divider()
-                        tagCategoryDonut(vm)
-                        Divider()
-                        fertilityWindowChart(vm)
-                        Divider()
-                        cervicalMucusChart(vm)
+                    VStack(alignment: .leading, spacing: DS.Spacing.md) {
+                        InsightsHeroCard(stats: vm.cycleStats())
+                        tagFrequencyChart(vm).cardStyle()
+                        tagsOverMonthChart(vm).cardStyle()
+                        tagCategoryDonut(vm).cardStyle()
+                        fertilityWindowChart(vm).cardStyle()
+                        cervicalMucusChart(vm).cardStyle()
                     }
                     .padding(DS.Spacing.md)
                 }
@@ -45,18 +43,18 @@ struct InsightsView: View {
     private var emptyState: some View {
         VStack(spacing: DS.Spacing.md) {
             Spacer(minLength: DS.Spacing.xxl)
-            Image(systemName: "chart.bar.fill")
-                .font(.system(size: 48))
-                .foregroundColor(DS.Color.secondaryText)
+            MoonPhaseView(phase: .full, color: DS.Color.moon, isActive: true, size: 56)
             Text("No Insights Yet")
                 .font(DS.Font.sectionHeader)
                 .foregroundColor(DS.Color.primaryText)
-            Text("Generate and archive your first cycle to see your patterns here.")
+            Text("Start a cycle in Cycles and log a few tags to see your patterns here.")
                 .font(DS.Font.label)
                 .foregroundColor(DS.Color.secondaryText)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, DS.Spacing.xl)
-            Spacer(minLength: DS.Spacing.xxl)
+            WaveBackground(drift: true)
+                .frame(height: 160)
+                .padding(.top, DS.Spacing.xl)
         }
     }
 
@@ -88,8 +86,8 @@ struct InsightsView: View {
                 .chartForegroundStyleScale([
                     "Symptom": DS.Color.phase1Default, "Mood": DS.Color.phase4Default,
                     "Dietary": DS.Color.phase3Default, "Exercise": DS.Color.phase2Default,
-                    "Medication": Color.gray, "Cervical Mucus": Color.teal,
-                    "Other": Color.gray.opacity(0.4)
+                    "Medication": DS.Color.waveMid, "Cervical Mucus": DS.Color.waveBack,
+                    "Other": DS.Color.secondaryText.opacity(0.4)
                 ])
                 .chartXScale(domain: 0...100)
                 .chartXAxis {
@@ -100,6 +98,7 @@ struct InsightsView: View {
                 }
                 .chartLegend(.hidden)
                 .frame(height: 130)
+                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
 
                 HStack(spacing: DS.Spacing.md) {
                     ForEach(Event.EventType.allCases, id: \.self) { phase in
@@ -187,6 +186,7 @@ struct InsightsView: View {
                     }
                 }
                 .frame(height: 150)
+                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 .chartXAxis {
                     AxisMarks(preset: .aligned) { value in
                         if let v = value.as(Int.self), v % 5 == 0 || v == 1 {
@@ -203,7 +203,7 @@ struct InsightsView: View {
                 }
 
                 VStack(alignment: .leading, spacing: DS.Spacing.xs) {
-                    HStack(spacing: DS.Spacing.md) {
+                    FlowLayout(spacing: DS.Spacing.md) {
                         ForEach(Event.EventType.allCases, id: \.self) { phase in
                             HStack(spacing: DS.Spacing.xs) {
                                 RoundedRectangle(cornerRadius: 2)
@@ -212,7 +212,6 @@ struct InsightsView: View {
                                 Text(phase.rawValue.capitalized)
                                     .font(DS.Font.micro)
                                     .foregroundColor(DS.Color.secondaryText)
-                                    .fixedSize()
                             }
                         }
                     }
@@ -251,7 +250,9 @@ struct InsightsView: View {
             if data.isEmpty {
                 placeholderCard(icon: "chart.pie", message: "Log tags to see your category breakdown here.")
             } else {
-                HStack(alignment: .center, spacing: DS.Spacing.lg) {
+                (dynamicTypeSize.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: DS.Spacing.lg))
+                    : AnyLayout(HStackLayout(alignment: .center, spacing: DS.Spacing.lg))) {
                     Chart(data) { item in
                         SectorMark(angle: .value("Count", item.count),
                                    innerRadius: .ratio(0.55), angularInset: 1.5)
@@ -328,6 +329,7 @@ struct InsightsView: View {
                 }
                 .chartYAxis(.hidden)
                 .frame(height: 120)
+                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 .chartOverlay { proxy in
                     GeometryReader { geo in
                         if hasBoth, let plotFrameAnchor = proxy.plotFrame {
@@ -350,7 +352,7 @@ struct InsightsView: View {
                 }
 
                 if !spans.isEmpty {
-                    HStack(spacing: DS.Spacing.md) {
+                    FlowLayout(spacing: DS.Spacing.md) {
                         ForEach(spans) { span in
                             HStack(spacing: DS.Spacing.xs) {
                                 RoundedRectangle(cornerRadius: 2).fill(span.color).frame(width: 10, height: 10)
@@ -418,6 +420,7 @@ struct InsightsView: View {
                     }
                 }
                 .frame(height: 140)
+                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 .chartYScale(domain: 0...5)
                 .chartYAxis {
                     AxisMarks(values: [1, 2, 3, 4]) { value in
@@ -435,7 +438,7 @@ struct InsightsView: View {
                         }
                     }
                 }
-                HStack(spacing: DS.Spacing.md) {
+                FlowLayout(spacing: DS.Spacing.md) {
                     ForEach([1, 2, 3, 4], id: \.self) { level in
                         HStack(spacing: DS.Spacing.xs) {
                             Circle().fill(vm.mucusColor(level)).frame(width: 8, height: 8)

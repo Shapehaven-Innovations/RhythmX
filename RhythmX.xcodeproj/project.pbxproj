@@ -7,13 +7,34 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		06E4851E30FCA01CDF7FCD63 /* WaveBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FA81FCC04EEC86588F0AD7D /* WaveBackground.swift */; };
 		1AC7154CDC76D82D5CB03CE0 /* NotificationScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98956941C504966F184775E7 /* NotificationScheduler.swift */; };
+		1F8087C017D67E5154C040AB /* FlowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9453D4AD1471398419DF1E5 /* FlowLayout.swift */; };
+		2245B7E1812BF5E0EE192437 /* PastCycleCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BBB374DF18272CE381029A6 /* PastCycleCard.swift */; };
+		2AC645034E663D69E7963C3F /* DayPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D381840351C0E0C312749984 /* DayPanelView.swift */; };
+		2B956230AE7849A38BBAF332 /* ICSExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9CB90A1309A46BBA6EB5152 /* ICSExporter.swift */; };
 		2F7454A654F0A64FEE080A3C /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42C348EB1E3479891C7797B3 /* DesignSystem.swift */; };
+		2FA438F5B21D68C752156DB6 /* CycleStatsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E8ECEFDF119A92EA1122A56 /* CycleStatsTests.swift */; };
+		353EA7ADADA981C582C524D2 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C68E06F381C48EEF448458E4 /* PrivacyInfo.xcprivacy */; };
+		3A8A48FA5D2FB27DFA933106 /* TagParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0777E305B273B00F5A443E /* TagParser.swift */; };
+		3B0FDDDA12C6F40498366713 /* StorageContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 864388A63C0EEF8C9104B7CE /* StorageContractTests.swift */; };
+		3F97BC472BAC337852261DDE /* PhaseStrip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C01FDCDA2578E1B7F8E4E47 /* PhaseStrip.swift */; };
+		450B275628BE8F1E9F0D7DD4 /* PhaseCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAB6A5D9308DBF7847C6F690 /* PhaseCalendarView.swift */; };
+		4B6E38023C7CA68FB867FBA9 /* CycleGeneratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BBF48C6475EE04BA9DB8933 /* CycleGeneratorTests.swift */; };
 		507F88DFF541A3DF8658DF9E /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06F4E436DA74D831B75AAA2A /* InsightsView.swift */; };
+		63D0075958241A1B853BDE4D /* PhaseRingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5DD4A676D24934843EE5550 /* PhaseRingView.swift */; };
+		6AC0B4C680B458F5D426569D /* ArchivedDataStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C10E7AEDEEB58814E5B66F4 /* ArchivedDataStoreTests.swift */; };
+		6F6DECECCE934F61062D4C84 /* InsightsHeroCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 576EC63054D483C415493B45 /* InsightsHeroCard.swift */; };
+		79CA6F6AD42DD0B14025DA46 /* MoonPhaseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 513722561C812AEF8A924CA8 /* MoonPhaseView.swift */; };
+		79D09A1DBB48C9AD4ED77AE2 /* CardStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6ABFEA515CDE71285C92038 /* CardStyle.swift */; };
 		7AE4A6DBC82D46C4BF921BDA /* InsightsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C610311324947E6A079D057 /* InsightsViewModel.swift */; };
 		7E5D1A01AD12544571CB9A2E /* ChipButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45EF4384CAAB58441BC28DB5 /* ChipButton.swift */; };
+		8308AAFAC6929C20643E6259 /* CalendarMonthModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1266E8AC105DFB74FF3A0B31 /* CalendarMonthModelTests.swift */; };
 		897C2630D89B267045968E51 /* TagLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 573AF1AB29910FA1DA430223 /* TagLibrary.swift */; };
 		8B636B3D7D30A2FD1AC5FC7E /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3E8697ACACE102A75C39FC9 /* AppSettings.swift */; };
+		8CE96C498F03FAEE752684CD /* CalendarMonthModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF9FEE3F86C40EFB16F2F559 /* CalendarMonthModel.swift */; };
+		8F0146EC3B12FC67CF85F48B /* TagParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 183D74EF5E4FAF4D48D11CDD /* TagParserTests.swift */; };
+		8FE4F603647BF1A10D643C11 /* InsightsViewModel+Stats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 367AF7B537C68EF6B0091FFE /* InsightsViewModel+Stats.swift */; };
 		9A0F1FC42D32BF4C00746E99 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0F1FC32D32BF4C00746E99 /* OnboardingView.swift */; };
 		9A0F1FC82D32C3A900746E99 /* GettingStartedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0F1FC72D32C3A900746E99 /* GettingStartedView.swift */; };
 		9A23E0FF2D288DB7008A0B8A /* PhasesFactsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A23E0FE2D288DB3008A0B8A /* PhasesFactsView.swift */; };
@@ -23,12 +44,7 @@
 		9A284FAD2CA7082E0021A785 /* Date+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A284FAC2CA7082E0021A785 /* Date+Extension.swift */; };
 		9A284FB02CA708630021A785 /* Event.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A284FAF2CA708630021A785 /* Event.swift */; };
 		9A284FB22CA708930021A785 /* EventStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A284FB12CA708930021A785 /* EventStore.swift */; };
-		9A284FB62CA7090A0021A785 /* CalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A284FB52CA7090A0021A785 /* CalendarView.swift */; };
-		9A284FB82CA709390021A785 /* DaysEventsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A284FB72CA709390021A785 /* DaysEventsListView.swift */; };
 		9A284FBA2CA709610021A785 /* EventsCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A284FB92CA709610021A785 /* EventsCalendarView.swift */; };
-		9A284FBD2CA709AE0021A785 /* EventFormType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A284FBC2CA709AE0021A785 /* EventFormType.swift */; };
-		9A284FBF2CA709D80021A785 /* EventFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A284FBE2CA709D80021A785 /* EventFormView.swift */; };
-		9A284FC12CA70A1D0021A785 /* EventFormViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A284FC02CA70A1D0021A785 /* EventFormViewModel.swift */; };
 		9A284FC52CA70A8D0021A785 /* EventsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A284FC42CA70A8D0021A785 /* EventsListView.swift */; };
 		9A284FC72CA70AB50021A785 /* ListViewRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A284FC62CA70AB50021A785 /* ListViewRow.swift */; };
 		9A284FC92CA70ADF0021A785 /* StartTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A284FC82CA70ADF0021A785 /* StartTabView.swift */; };
@@ -39,29 +55,66 @@
 		9ADBC1ED2D4D674800252EAE /* ArchivedDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ADBC1EC2D4D673D00252EAE /* ArchivedDataStore.swift */; };
 		9AFA69942D3452B000718143 /* ArchivedDataBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AFA69932D3452B000718143 /* ArchivedDataBlock.swift */; };
 		9AFE6AB22D35A5EA008C4512 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 9AFE6AB12D35A5EA008C4512 /* LaunchScreen.storyboard */; };
+		A723E22C87C729FF51AA465F /* MoonPhaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34987AA34C7654E51809BD29 /* MoonPhaseTests.swift */; };
 		AA43F2F932D4A01DC0EBD723 /* PredictionBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4407384B1D4A0F834A4466D0 /* PredictionBannerView.swift */; };
+		AB50CAA54EE146CEA37966D4 /* ShareRhythmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21B1173032E64822874E0CBC /* ShareRhythmView.swift */; };
 		B1291DB7333DFA6B45231279 /* PhaseCardHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB0F884432EB83252493DE86 /* PhaseCardHeader.swift */; };
 		B67F1B4EFFBCCC39F9FD5ACD /* PrimaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE70621E110F02513CBF8A4 /* PrimaryButton.swift */; };
+		B695E8D63B48BDB3C8FE2EF2 /* TodayCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29D0EB62F5A049DB7AA597F4 /* TodayCard.swift */; };
 		BC1681950583B241319A68C9 /* Color+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 653482AB1E702002917BC302 /* Color+Hex.swift */; };
+		C597B66CFC1F593A4E67373A /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 070446420BBAB7D83402B5F3 /* Foundation.framework */; };
+		D8AC70FA5D6A6DB40952DD74 /* EventStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D584F3D380BCF780891BFFE0 /* EventStoreTests.swift */; };
 		D94184BBC02A7ECEC766E8CD /* PhaseNumberBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5BE43829CDDF88CB52CBF76 /* PhaseNumberBadge.swift */; };
 		D9945CA14EF17691DB32487C /* CyclePredictionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74FF00D330A0CB7B84F64CAE /* CyclePredictionService.swift */; };
+		D9C73219A3A1808C08C8A140 /* PhaseGuideContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 317D104D911C6D8B8E03C16C /* PhaseGuideContent.swift */; };
+		DEA52115E63C2DB4C7EFCAD3 /* PhaseGuideTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E71349605B2AF8F8B913A00C /* PhaseGuideTests.swift */; };
 		E114FC1859FA5D3C217A7680 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E4EB6BB0CA0600D178B5EB2 /* SettingsView.swift */; };
+		EA69911ED89131A8AB959296 /* CycleGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0AB50932A6815FFECE41803 /* CycleGenerator.swift */; };
+		F2B7A2D8DD606042BE70EA6A /* InsightsViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92627CFFCECDA92C0114E2C5 /* InsightsViewModelTests.swift */; };
+		F72C535978EB21FE0BD8B9CE /* ICSExporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F2B83369480F280D2F0667 /* ICSExporterTests.swift */; };
 		F7B515E09D3F62EAF8CA3600 /* SecondaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29867D871BE4B5D650A3F356 /* SecondaryButton.swift */; };
-		2B956230AE7849A38BBAF332 /* ICSExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9CB90A1309A46BBA6EB5152 /* ICSExporter.swift */; };
-		AB50CAA54EE146CEA37966D4 /* ShareRhythmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21B1173032E64822874E0CBC /* ShareRhythmView.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		B5B2A52C116ACE486CE9F3A1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9A284F8E2CA701960021A785 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9A284F952CA701960021A785;
+			remoteInfo = RhythmX;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		06F4E436DA74D831B75AAA2A /* InsightsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
+		070446420BBAB7D83402B5F3 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		0BBB374DF18272CE381029A6 /* PastCycleCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PastCycleCard.swift; sourceTree = "<group>"; };
+		1266E8AC105DFB74FF3A0B31 /* CalendarMonthModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CalendarMonthModelTests.swift; sourceTree = "<group>"; };
+		183D74EF5E4FAF4D48D11CDD /* TagParserTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TagParserTests.swift; sourceTree = "<group>"; };
+		1A0777E305B273B00F5A443E /* TagParser.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TagParser.swift; path = Services/TagParser.swift; sourceTree = "<group>"; };
+		1FA81FCC04EEC86588F0AD7D /* WaveBackground.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WaveBackground.swift; path = Components/WaveBackground.swift; sourceTree = "<group>"; };
+		21B1173032E64822874E0CBC /* ShareRhythmView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShareRhythmView.swift; sourceTree = "<group>"; };
 		29867D871BE4B5D650A3F356 /* SecondaryButton.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SecondaryButton.swift; path = Components/SecondaryButton.swift; sourceTree = "<group>"; };
+		29D0EB62F5A049DB7AA597F4 /* TodayCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TodayCard.swift; sourceTree = "<group>"; };
+		2C01FDCDA2578E1B7F8E4E47 /* PhaseStrip.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PhaseStrip.swift; path = Components/PhaseStrip.swift; sourceTree = "<group>"; };
+		317D104D911C6D8B8E03C16C /* PhaseGuideContent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PhaseGuideContent.swift; path = Services/PhaseGuideContent.swift; sourceTree = "<group>"; };
+		34987AA34C7654E51809BD29 /* MoonPhaseTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MoonPhaseTests.swift; sourceTree = "<group>"; };
+		367AF7B537C68EF6B0091FFE /* InsightsViewModel+Stats.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "InsightsViewModel+Stats.swift"; sourceTree = "<group>"; };
 		3E4EB6BB0CA0600D178B5EB2 /* SettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		42C348EB1E3479891C7797B3 /* DesignSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		4407384B1D4A0F834A4466D0 /* PredictionBannerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PredictionBannerView.swift; path = Components/PredictionBannerView.swift; sourceTree = "<group>"; };
 		45EF4384CAAB58441BC28DB5 /* ChipButton.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ChipButton.swift; path = Components/ChipButton.swift; sourceTree = "<group>"; };
 		4C610311324947E6A079D057 /* InsightsViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InsightsViewModel.swift; sourceTree = "<group>"; };
+		513722561C812AEF8A924CA8 /* MoonPhaseView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MoonPhaseView.swift; path = Components/MoonPhaseView.swift; sourceTree = "<group>"; };
 		573AF1AB29910FA1DA430223 /* TagLibrary.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TagLibrary.swift; sourceTree = "<group>"; };
+		576EC63054D483C415493B45 /* InsightsHeroCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InsightsHeroCard.swift; sourceTree = "<group>"; };
+		5BBF48C6475EE04BA9DB8933 /* CycleGeneratorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CycleGeneratorTests.swift; sourceTree = "<group>"; };
+		5E8ECEFDF119A92EA1122A56 /* CycleStatsTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CycleStatsTests.swift; sourceTree = "<group>"; };
 		653482AB1E702002917BC302 /* Color+Hex.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
 		74FF00D330A0CB7B84F64CAE /* CyclePredictionService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = CyclePredictionService.swift; path = Services/CyclePredictionService.swift; sourceTree = "<group>"; };
+		864388A63C0EEF8C9104B7CE /* StorageContractTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StorageContractTests.swift; sourceTree = "<group>"; };
+		8C10E7AEDEEB58814E5B66F4 /* ArchivedDataStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ArchivedDataStoreTests.swift; sourceTree = "<group>"; };
+		92627CFFCECDA92C0114E2C5 /* InsightsViewModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InsightsViewModelTests.swift; sourceTree = "<group>"; };
 		98956941C504966F184775E7 /* NotificationScheduler.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = NotificationScheduler.swift; path = Services/NotificationScheduler.swift; sourceTree = "<group>"; };
 		9A0F1FC32D32BF4C00746E99 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		9A0F1FC72D32C3A900746E99 /* GettingStartedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GettingStartedView.swift; sourceTree = "<group>"; };
@@ -73,12 +126,7 @@
 		9A284FAC2CA7082E0021A785 /* Date+Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Date+Extension.swift"; sourceTree = "<group>"; };
 		9A284FAF2CA708630021A785 /* Event.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Event.swift; sourceTree = "<group>"; };
 		9A284FB12CA708930021A785 /* EventStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventStore.swift; sourceTree = "<group>"; };
-		9A284FB52CA7090A0021A785 /* CalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarView.swift; sourceTree = "<group>"; };
-		9A284FB72CA709390021A785 /* DaysEventsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DaysEventsListView.swift; sourceTree = "<group>"; };
 		9A284FB92CA709610021A785 /* EventsCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventsCalendarView.swift; sourceTree = "<group>"; };
-		9A284FBC2CA709AE0021A785 /* EventFormType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventFormType.swift; sourceTree = "<group>"; };
-		9A284FBE2CA709D80021A785 /* EventFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventFormView.swift; sourceTree = "<group>"; };
-		9A284FC02CA70A1D0021A785 /* EventFormViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventFormViewModel.swift; sourceTree = "<group>"; };
 		9A284FC42CA70A8D0021A785 /* EventsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventsListView.swift; sourceTree = "<group>"; };
 		9A284FC62CA70AB50021A785 /* ListViewRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListViewRow.swift; sourceTree = "<group>"; };
 		9A284FC82CA70ADF0021A785 /* StartTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartTabView.swift; sourceTree = "<group>"; };
@@ -90,12 +138,23 @@
 		9ADBC1EC2D4D673D00252EAE /* ArchivedDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchivedDataStore.swift; sourceTree = "<group>"; };
 		9AFA69932D3452B000718143 /* ArchivedDataBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchivedDataBlock.swift; sourceTree = "<group>"; };
 		9AFE6AB12D35A5EA008C4512 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		A5DD4A676D24934843EE5550 /* PhaseRingView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PhaseRingView.swift; path = Components/PhaseRingView.swift; sourceTree = "<group>"; };
+		B20E32321D7ACF00857D3CE8 /* RhythmXTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RhythmXTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5BE43829CDDF88CB52CBF76 /* PhaseNumberBadge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PhaseNumberBadge.swift; path = Components/PhaseNumberBadge.swift; sourceTree = "<group>"; };
-		BAE70621E110F02513CBF8A4 /* PrimaryButton.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PrimaryButton.swift; path = Components/PrimaryButton.swift; sourceTree = "<group>"; };
-		E3E8697ACACE102A75C39FC9 /* AppSettings.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
-		EB0F884432EB83252493DE86 /* PhaseCardHeader.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PhaseCardHeader.swift; path = Components/PhaseCardHeader.swift; sourceTree = "<group>"; };
 		B9CB90A1309A46BBA6EB5152 /* ICSExporter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ICSExporter.swift; path = Services/ICSExporter.swift; sourceTree = "<group>"; };
-		21B1173032E64822874E0CBC /* ShareRhythmView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShareRhythmView.swift; sourceTree = "<group>"; };
+		BAB6A5D9308DBF7847C6F690 /* PhaseCalendarView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PhaseCalendarView.swift; sourceTree = "<group>"; };
+		BAE70621E110F02513CBF8A4 /* PrimaryButton.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PrimaryButton.swift; path = Components/PrimaryButton.swift; sourceTree = "<group>"; };
+		C68E06F381C48EEF448458E4 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		C6ABFEA515CDE71285C92038 /* CardStyle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = CardStyle.swift; path = Components/CardStyle.swift; sourceTree = "<group>"; };
+		D381840351C0E0C312749984 /* DayPanelView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DayPanelView.swift; sourceTree = "<group>"; };
+		D584F3D380BCF780891BFFE0 /* EventStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EventStoreTests.swift; sourceTree = "<group>"; };
+		DF9FEE3F86C40EFB16F2F559 /* CalendarMonthModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = CalendarMonthModel.swift; path = Services/CalendarMonthModel.swift; sourceTree = "<group>"; };
+		E0AB50932A6815FFECE41803 /* CycleGenerator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = CycleGenerator.swift; path = Services/CycleGenerator.swift; sourceTree = "<group>"; };
+		E3E8697ACACE102A75C39FC9 /* AppSettings.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
+		E71349605B2AF8F8B913A00C /* PhaseGuideTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PhaseGuideTests.swift; sourceTree = "<group>"; };
+		EB0F884432EB83252493DE86 /* PhaseCardHeader.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PhaseCardHeader.swift; path = Components/PhaseCardHeader.swift; sourceTree = "<group>"; };
+		F2F2B83369480F280D2F0667 /* ICSExporterTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ICSExporterTests.swift; sourceTree = "<group>"; };
+		F9453D4AD1471398419DF1E5 /* FlowLayout.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FlowLayout.swift; path = Components/FlowLayout.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -103,6 +162,14 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		281BB0504F6A89AFE3519B66 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C597B66CFC1F593A4E67373A /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		9A284F932CA701960021A785 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -113,6 +180,40 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		76AA5906FBE2327D3BF32F82 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				807B6A074C16727A771BE1C3 /* iOS */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		7D69A98C5AD666AE84DA19D6 /* RhythmXTests */ = {
+			isa = PBXGroup;
+			children = (
+				D584F3D380BCF780891BFFE0 /* EventStoreTests.swift */,
+				F2F2B83369480F280D2F0667 /* ICSExporterTests.swift */,
+				92627CFFCECDA92C0114E2C5 /* InsightsViewModelTests.swift */,
+				5BBF48C6475EE04BA9DB8933 /* CycleGeneratorTests.swift */,
+				34987AA34C7654E51809BD29 /* MoonPhaseTests.swift */,
+				5E8ECEFDF119A92EA1122A56 /* CycleStatsTests.swift */,
+				8C10E7AEDEEB58814E5B66F4 /* ArchivedDataStoreTests.swift */,
+				1266E8AC105DFB74FF3A0B31 /* CalendarMonthModelTests.swift */,
+				183D74EF5E4FAF4D48D11CDD /* TagParserTests.swift */,
+				E71349605B2AF8F8B913A00C /* PhaseGuideTests.swift */,
+				864388A63C0EEF8C9104B7CE /* StorageContractTests.swift */,
+			);
+			path = RhythmXTests;
+			sourceTree = "<group>";
+		};
+		807B6A074C16727A771BE1C3 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				070446420BBAB7D83402B5F3 /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
 		8A70DF1BBA95FDB5789558B1 /* Components */ = {
 			isa = PBXGroup;
 			children = (
@@ -122,6 +223,12 @@
 				29867D871BE4B5D650A3F356 /* SecondaryButton.swift */,
 				45EF4384CAAB58441BC28DB5 /* ChipButton.swift */,
 				4407384B1D4A0F834A4466D0 /* PredictionBannerView.swift */,
+				C6ABFEA515CDE71285C92038 /* CardStyle.swift */,
+				513722561C812AEF8A924CA8 /* MoonPhaseView.swift */,
+				1FA81FCC04EEC86588F0AD7D /* WaveBackground.swift */,
+				A5DD4A676D24934843EE5550 /* PhaseRingView.swift */,
+				2C01FDCDA2578E1B7F8E4E47 /* PhaseStrip.swift */,
+				F9453D4AD1471398419DF1E5 /* FlowLayout.swift */,
 			);
 			name = Components;
 			sourceTree = "<group>";
@@ -132,6 +239,8 @@
 				9A0FE6982D355A1200E5BBDA /* License */,
 				9A284F982CA701960021A785 /* RhythmX */,
 				9A284F972CA701960021A785 /* Products */,
+				76AA5906FBE2327D3BF32F82 /* Frameworks */,
+				7D69A98C5AD666AE84DA19D6 /* RhythmXTests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -139,6 +248,7 @@
 			isa = PBXGroup;
 			children = (
 				9A284F962CA701960021A785 /* RhythmX.app */,
+				B20E32321D7ACF00857D3CE8 /* RhythmXTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -159,6 +269,7 @@
 				E3E8697ACACE102A75C39FC9 /* AppSettings.swift */,
 				573AF1AB29910FA1DA430223 /* TagLibrary.swift */,
 				E1422C535D173CD1AC4C20E6 /* Services */,
+				C68E06F381C48EEF448458E4 /* PrivacyInfo.xcprivacy */,
 			);
 			path = RhythmX;
 			sourceTree = "<group>";
@@ -201,13 +312,15 @@
 				9A23E0FE2D288DB3008A0B8A /* PhasesFactsView.swift */,
 				9A570D5E2D2708CC00A025D8 /* SettingsCycleInfoView.swift */,
 				9A284FC32CA70A530021A785 /* ListViewTab */,
-				9A284FBB2CA7097E0021A785 /* EditUpdateView */,
 				9A284FB42CA708E20021A785 /* CalendarViewTab */,
 				8A70DF1BBA95FDB5789558B1 /* Components */,
 				06F4E436DA74D831B75AAA2A /* InsightsView.swift */,
 				4C610311324947E6A079D057 /* InsightsViewModel.swift */,
 				3E4EB6BB0CA0600D178B5EB2 /* SettingsView.swift */,
 				21B1173032E64822874E0CBC /* ShareRhythmView.swift */,
+				367AF7B537C68EF6B0091FFE /* InsightsViewModel+Stats.swift */,
+				576EC63054D483C415493B45 /* InsightsHeroCard.swift */,
+				0BBB374DF18272CE381029A6 /* PastCycleCard.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -215,21 +328,12 @@
 		9A284FB42CA708E20021A785 /* CalendarViewTab */ = {
 			isa = PBXGroup;
 			children = (
-				9A284FB52CA7090A0021A785 /* CalendarView.swift */,
-				9A284FB72CA709390021A785 /* DaysEventsListView.swift */,
 				9A284FB92CA709610021A785 /* EventsCalendarView.swift */,
+				BAB6A5D9308DBF7847C6F690 /* PhaseCalendarView.swift */,
+				29D0EB62F5A049DB7AA597F4 /* TodayCard.swift */,
+				D381840351C0E0C312749984 /* DayPanelView.swift */,
 			);
 			path = CalendarViewTab;
-			sourceTree = "<group>";
-		};
-		9A284FBB2CA7097E0021A785 /* EditUpdateView */ = {
-			isa = PBXGroup;
-			children = (
-				9A284FBC2CA709AE0021A785 /* EventFormType.swift */,
-				9A284FBE2CA709D80021A785 /* EventFormView.swift */,
-				9A284FC02CA70A1D0021A785 /* EventFormViewModel.swift */,
-			);
-			path = EditUpdateView;
 			sourceTree = "<group>";
 		};
 		9A284FC32CA70A530021A785 /* ListViewTab */ = {
@@ -248,6 +352,10 @@
 				74FF00D330A0CB7B84F64CAE /* CyclePredictionService.swift */,
 				98956941C504966F184775E7 /* NotificationScheduler.swift */,
 				B9CB90A1309A46BBA6EB5152 /* ICSExporter.swift */,
+				E0AB50932A6815FFECE41803 /* CycleGenerator.swift */,
+				DF9FEE3F86C40EFB16F2F559 /* CalendarMonthModel.swift */,
+				1A0777E305B273B00F5A443E /* TagParser.swift */,
+				317D104D911C6D8B8E03C16C /* PhaseGuideContent.swift */,
 			);
 			name = Services;
 			sourceTree = "<group>";
@@ -271,6 +379,24 @@
 			productName = Lunar;
 			productReference = 9A284F962CA701960021A785 /* RhythmX.app */;
 			productType = "com.apple.product-type.application";
+		};
+		EACC834CD07ADAB0A24B5BA2 /* RhythmXTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 95D0F7FC7696D7A813C9E399 /* Build configuration list for PBXNativeTarget "RhythmXTests" */;
+			buildPhases = (
+				AEDF887B04C2A2C04C21E6F2 /* Sources */,
+				281BB0504F6A89AFE3519B66 /* Frameworks */,
+				1518685EFE78468388030C23 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A1377E92038A63C70577A2EF /* PBXTargetDependency */,
+			);
+			name = RhythmXTests;
+			productName = RhythmXTests;
+			productReference = B20E32321D7ACF00857D3CE8 /* RhythmXTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -301,11 +427,19 @@
 			projectRoot = "";
 			targets = (
 				9A284F952CA701960021A785 /* RhythmX */,
+				EACC834CD07ADAB0A24B5BA2 /* RhythmXTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		1518685EFE78468388030C23 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		9A284F942CA701960021A785 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -313,6 +447,7 @@
 				9AFE6AB22D35A5EA008C4512 /* LaunchScreen.storyboard in Resources */,
 				9A284FA12CA701980021A785 /* Preview Assets.xcassets in Resources */,
 				9A284F9E2CA701980021A785 /* Assets.xcassets in Resources */,
+				353EA7ADADA981C582C524D2 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -323,8 +458,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9A284FB62CA7090A0021A785 /* CalendarView.swift in Sources */,
-				9A284FB82CA709390021A785 /* DaysEventsListView.swift in Sources */,
 				9A0F1FC82D32C3A900746E99 /* GettingStartedView.swift in Sources */,
 				9A570D5F2D2708D800A025D8 /* SettingsCycleInfoView.swift in Sources */,
 				9A284FC92CA70ADF0021A785 /* StartTabView.swift in Sources */,
@@ -336,15 +469,12 @@
 				9A284FC72CA70AB50021A785 /* ListViewRow.swift in Sources */,
 				9ADBC1ED2D4D674800252EAE /* ArchivedDataStore.swift in Sources */,
 				9A4747F52D30B52B00BB7C72 /* TagFormView.swift in Sources */,
-				9A284FBF2CA709D80021A785 /* EventFormView.swift in Sources */,
 				9A0F1FC42D32BF4C00746E99 /* OnboardingView.swift in Sources */,
 				9A23E0FF2D288DB7008A0B8A /* PhasesFactsView.swift in Sources */,
 				9A6F3CB92CA717B1005D5328 /* Rhythm.swift in Sources */,
 				9A23E1072D29C256008A0B8A /* ArchivedDataView.swift in Sources */,
-				9A284FBD2CA709AE0021A785 /* EventFormType.swift in Sources */,
 				9A284FAD2CA7082E0021A785 /* Date+Extension.swift in Sources */,
 				9A3972FD2D8F248E008E6743 /* PhaseTagsEditorView.swift in Sources */,
-				9A284FC12CA70A1D0021A785 /* EventFormViewModel.swift in Sources */,
 				2F7454A654F0A64FEE080A3C /* DesignSystem.swift in Sources */,
 				D94184BBC02A7ECEC766E8CD /* PhaseNumberBadge.swift in Sources */,
 				B1291DB7333DFA6B45231279 /* PhaseCardHeader.swift in Sources */,
@@ -362,12 +492,72 @@
 				AA43F2F932D4A01DC0EBD723 /* PredictionBannerView.swift in Sources */,
 				2B956230AE7849A38BBAF332 /* ICSExporter.swift in Sources */,
 				AB50CAA54EE146CEA37966D4 /* ShareRhythmView.swift in Sources */,
+				79D09A1DBB48C9AD4ED77AE2 /* CardStyle.swift in Sources */,
+				EA69911ED89131A8AB959296 /* CycleGenerator.swift in Sources */,
+				79CA6F6AD42DD0B14025DA46 /* MoonPhaseView.swift in Sources */,
+				06E4851E30FCA01CDF7FCD63 /* WaveBackground.swift in Sources */,
+				63D0075958241A1B853BDE4D /* PhaseRingView.swift in Sources */,
+				3F97BC472BAC337852261DDE /* PhaseStrip.swift in Sources */,
+				8FE4F603647BF1A10D643C11 /* InsightsViewModel+Stats.swift in Sources */,
+				6F6DECECCE934F61062D4C84 /* InsightsHeroCard.swift in Sources */,
+				8CE96C498F03FAEE752684CD /* CalendarMonthModel.swift in Sources */,
+				450B275628BE8F1E9F0D7DD4 /* PhaseCalendarView.swift in Sources */,
+				B695E8D63B48BDB3C8FE2EF2 /* TodayCard.swift in Sources */,
+				2AC645034E663D69E7963C3F /* DayPanelView.swift in Sources */,
+				3A8A48FA5D2FB27DFA933106 /* TagParser.swift in Sources */,
+				1F8087C017D67E5154C040AB /* FlowLayout.swift in Sources */,
+				D9C73219A3A1808C08C8A140 /* PhaseGuideContent.swift in Sources */,
+				2245B7E1812BF5E0EE192437 /* PastCycleCard.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AEDF887B04C2A2C04C21E6F2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D8AC70FA5D6A6DB40952DD74 /* EventStoreTests.swift in Sources */,
+				F72C535978EB21FE0BD8B9CE /* ICSExporterTests.swift in Sources */,
+				F2B7A2D8DD606042BE70EA6A /* InsightsViewModelTests.swift in Sources */,
+				4B6E38023C7CA68FB867FBA9 /* CycleGeneratorTests.swift in Sources */,
+				A723E22C87C729FF51AA465F /* MoonPhaseTests.swift in Sources */,
+				2FA438F5B21D68C752156DB6 /* CycleStatsTests.swift in Sources */,
+				6AC0B4C680B458F5D426569D /* ArchivedDataStoreTests.swift in Sources */,
+				8308AAFAC6929C20643E6259 /* CalendarMonthModelTests.swift in Sources */,
+				8F0146EC3B12FC67CF85F48B /* TagParserTests.swift in Sources */,
+				DEA52115E63C2DB4C7EFCAD3 /* PhaseGuideTests.swift in Sources */,
+				3B0FDDDA12C6F40498366713 /* StorageContractTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		A1377E92038A63C70577A2EF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = RhythmX;
+			target = 9A284F952CA701960021A785 /* RhythmX */;
+			targetProxy = B5B2A52C116ACE486CE9F3A1 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		6C0FE8F13B2FC57426C81634 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				PRODUCT_BUNDLE_IDENTIFIER = beta.Rhythm.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RhythmX.app/RhythmX";
+			};
+			name = Debug;
+		};
 		9A284FA22CA701980021A785 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -494,16 +684,15 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
-				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 1;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_ASSET_PATHS = "\"RhythmX/Preview Content\"";
-				DEVELOPMENT_TEAM = "";
-				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = P9Z5QB8965;
+				DEVELOPMENT_TEAM = P9Z5QB8965;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RhythmX/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Rhythm(x)";
+				INFOPLIST_KEY_CFBundleDisplayName = RhythmX;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen.storyboard;
@@ -514,11 +703,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.8;
+				MARKETING_VERSION = 1.9;
 				PRODUCT_BUNDLE_IDENTIFIER = beta.Rhythm;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "beta.Rhythm(x)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -534,16 +722,15 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
-				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 1;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_ASSET_PATHS = "\"RhythmX/Preview Content\"";
-				DEVELOPMENT_TEAM = "";
-				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = P9Z5QB8965;
+				DEVELOPMENT_TEAM = P9Z5QB8965;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RhythmX/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Rhythm(x)";
+				INFOPLIST_KEY_CFBundleDisplayName = RhythmX;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen.storyboard;
@@ -554,11 +741,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.8;
+				MARKETING_VERSION = 1.9;
 				PRODUCT_BUNDLE_IDENTIFIER = beta.Rhythm;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "beta.Rhythm(x)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -569,9 +755,36 @@
 			};
 			name = Release;
 		};
+		C9D019C9B1897F31EB7EA8F4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				PRODUCT_BUNDLE_IDENTIFIER = beta.Rhythm.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RhythmX.app/RhythmX";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		95D0F7FC7696D7A813C9E399 /* Build configuration list for PBXNativeTarget "RhythmXTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C9D019C9B1897F31EB7EA8F4 /* Release */,
+				6C0FE8F13B2FC57426C81634 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		9A284F912CA701960021A785 /* Build configuration list for PBXProject "RhythmX" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

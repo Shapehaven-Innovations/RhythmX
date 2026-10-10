@@ -4,6 +4,7 @@ import SwiftUI
 
 struct PredictionBannerView: View {
     let daysUntil: Int
+    @EnvironmentObject var appSettings: AppSettings
 
     private var message: String {
         switch daysUntil {
@@ -16,11 +17,11 @@ struct PredictionBannerView: View {
     var body: some View {
         HStack(spacing: DS.Spacing.sm) {
             RoundedRectangle(cornerRadius: 2)
-                .fill(Event.EventType.menstrual.phaseColor)
+                .fill(appSettings.phaseColor(for: .menstrual))
                 .frame(width: 4)
 
             Image(systemName: "calendar.badge.clock")
-                .foregroundColor(Event.EventType.menstrual.phaseColor)
+                .foregroundColor(appSettings.phaseColor(for: .menstrual))
 
             Text(message)
                 .font(DS.Font.label)
@@ -31,8 +32,6 @@ struct PredictionBannerView: View {
         .padding(DS.Spacing.md)
         .background(DS.Color.cardBackground)
         .cornerRadius(DS.Radius.card)
-        .padding(.horizontal, DS.Spacing.md)
-        .padding(.top, DS.Spacing.sm)
     }
 }
 
@@ -43,4 +42,5 @@ struct PredictionBannerView: View {
         PredictionBannerView(daysUntil: 3)
     }
     .padding()
+    .environmentObject(AppSettings())
 }

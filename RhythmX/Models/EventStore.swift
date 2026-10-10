@@ -63,26 +63,7 @@ class EventStore: ObservableObject {
 
     // MARK: - Generate cycle events
     func generateCycleEvents(startDate: Date, cycleLength: Int = 28) {
-        events.removeAll()
-        let phases: [(Event.EventType, Range<Int>)] = [
-            (.menstrual,   0..<5),
-            (.follicular,  5..<13),
-            (.ovulation,   13..<16),
-            (.luteal,      16..<cycleLength)
-        ]
-
-        for (phaseType, dayRange) in phases {
-            for offset in dayRange {
-                if let phaseDate = Calendar.current.date(byAdding: .day, value: offset, to: startDate) {
-                    let e = Event(
-                        eventType: phaseType,
-                        date: phaseDate,
-                        note: "\(phaseType.rawValue.capitalized) day \(offset+1)"
-                    )
-                    events.append(e)
-                }
-            }
-        }
+        events = CycleGenerator.events(startDate: startDate, cycleLength: cycleLength)
         // Save after generation
         saveToUserDefaults()
         // IMPORTANT: Do NOT flip `shouldReloadAll` here yet.
@@ -101,6 +82,20 @@ class EventStore: ObservableObject {
         events.removeAll()
         saveToUserDefaults()
         // Also do NOT flip `shouldReloadAll` here; wait for "OK" in the alert.
+    }
+
+    // MARK: - Tags
+    /// Remove one raw tag from every event in a phase.
+    func removeTag(_ raw: String, in phase: Event.EventType) {
+        for event in events where event.eventType == phase {
+            guard TagParser.split(event.tags).contains(raw) else { continue }
+            let newTags = TagParser.removing(raw, from: event.tags)
+            if newTags != event.tags {
+                var updated = event
+                updated.tags = newTags
+                update(updated)
+            }
+        }
     }
 
     // MARK: - Persistence

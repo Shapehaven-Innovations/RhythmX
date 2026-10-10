@@ -3,20 +3,17 @@
 import SwiftUI
 
 struct GettingStartedView: View {
-    @AppStorage("didFinishOnboarding") var didFinishOnboarding = false
-    @Environment(\.dismiss) private var dismiss
-
     private let steps: [(String, String)] = [
-        ("Generate Cycle Events",
-         "In Manage, tap 'Generate Cycle Events' to populate your calendar with phase events for your chosen cycle length."),
-        ("Add Tags",
-         "Use the List tab to add tags (e.g., Dietary, Mood). Tap the + button to attach a tag to a date."),
-        ("Check Calendar",
-         "In the Calendar tab, see your phases and events. Tap a date to view or edit tags."),
-        ("Archive Data",
-         "Each month in Manage, archive your previous data and generate new events. Use the Archive Data view to explore trends."),
-        ("Learn More",
-         "In Manage, open 'Menstrual Phases Info' for details on each phase.")
+        ("Start a cycle",
+         "In Cycles, choose the first day and length, then tap Generate cycle."),
+        ("Add tags",
+         "In Tags, or from a day on the Calendar, tap + to log symptoms, mood, and more."),
+        ("Check the calendar",
+         "See your phases at a glance. Tap any day to view its tags."),
+        ("Archive a cycle",
+         "When a cycle ends, archive it from Cycles, then review it in Past Cycles."),
+        ("Learn more",
+         "In Cycles, open Learn about phases for details on each phase.")
     ]
 
     var body: some View {
@@ -26,7 +23,7 @@ struct GettingStartedView: View {
                     HStack(alignment: .top, spacing: DS.Spacing.sm) {
                         Text("\(index + 1)")
                             .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(DS.Color.onAccent)
                             .frame(width: 22, height: 22)
                             .background(Color.accentColor)
                             .clipShape(Circle())
@@ -49,17 +46,8 @@ struct GettingStartedView: View {
             .padding(DS.Spacing.md)
         }
         .background(DS.Color.pageBackground.ignoresSafeArea())
-        .navigationTitle("Getting Started")
+        .navigationTitle("How RhythmX works")
         .navigationBarTitleDisplayMode(.large)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Done") {
-                    didFinishOnboarding = true
-                    dismiss()
-                }
-                .font(DS.Font.label.weight(.semibold))
-            }
-        }
     }
 }
 

@@ -40,8 +40,17 @@ enum DS {
             return c
         }
 
-        static let cardBackground  = SwiftUI.Color(UIColor.secondarySystemBackground)
-        static let pageBackground  = SwiftUI.Color(UIColor.systemGroupedBackground)
+        static let cardBackground = makeAdaptive(light: (255, 255, 255), dark: (43, 24, 48))
+        static let pageBackground = makeAdaptive(light: (251, 241, 243), dark: (27, 15, 30))
+
+        // Brand palette (moon and ocean)
+        static let accent    = makeAdaptive(light: (94, 38, 79),    dark: (232, 165, 184))
+        static let onAccent  = makeAdaptive(light: (255, 255, 255), dark: (27, 15, 30))
+        static let moon      = makeAdaptive(light: (240, 179, 196), dark: (244, 228, 236))
+        static let waveBack  = makeAdaptive(light: (196, 130, 170), dark: (196, 138, 168))
+        static let waveMid   = makeAdaptive(light: (176, 104, 154), dark: (154, 92, 134))
+        static let waveFront = makeAdaptive(light: (139, 63, 107),  dark: (58, 27, 58))
+
         static let separator       = SwiftUI.Color(UIColor.separator)
         static let primaryText     = SwiftUI.Color(UIColor.label)
         static let secondaryText   = SwiftUI.Color(UIColor.secondaryLabel)

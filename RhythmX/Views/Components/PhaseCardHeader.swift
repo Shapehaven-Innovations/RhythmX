@@ -14,7 +14,7 @@ struct PhaseCardHeader: View {
                 .fill(appSettings.phaseColor(for: phase))
                 .frame(width: 4, height: 36)
 
-            PhaseNumberBadge(phase: phase)
+            MoonPhaseView(phase: phase.moonPhase, color: appSettings.phaseColor(for: phase), size: 22)
 
             VStack(alignment: .leading, spacing: DS.Spacing.xs) {
                 Text(phase.displayName)

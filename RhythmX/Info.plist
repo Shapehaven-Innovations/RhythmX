@@ -5,6 +5,6 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSUserNotificationsUsageDescription</key>
-	<string>Rhythm(x) uses notifications to remind you when your cycle is anticipated to start.</string>
+	<string>RhythmX uses notifications to remind you when your cycle is anticipated to start.</string>
 </dict>
 </plist>
