@@ -1,96 +1,82 @@
-# RhythmX – README
+# RhythmX
 
-Welcome to **RhythmX**, an iOS app that helps you track menstrual cycle phases, add freeform tags (like moods, dietary notes, etc.), and archive past cycles for future reference. Our goal is to make cycle tracking simpler and more intuitive-helping you spot patterns and stay in tune with your body.
+A private menstrual cycle tracker for iPhone. Log your cycle, tag how you feel, and see your patterns. Everything stays on your device.
 
----
+**No account. No ads. No tracking. No network access.**
 
-## Overview
-
-- **Generate Cycle Events**  
-  Pick a start date and cycle length; the app auto-creates events for the menstrual, follicular, ovulation, and luteal phases.
-
-- **Tag Your Days**  
-  Add custom notes (e.g., dietary or exercise) to specific dates for more detailed tracking.
-
-- **Calendar View**  
-  An interactive month calendar shows icons for each phase or event. Tap any date to see more details.
-
-- **Archive Past Cycles**  
-  Save completed cycles in “archives” so you can review them later, then generate fresh events for upcoming cycles.
+![iOS 18+](https://img.shields.io/badge/iOS-18%2B-5E264F) ![SwiftUI](https://img.shields.io/badge/SwiftUI-Swift%205-E8A5B8) ![License](https://img.shields.io/badge/license-Apache%202.0-lightgrey)
 
 ---
 
-## Tabs
+## Features
 
-Insights, Calendar, Tags, Cycles, Settings.
+- **Insights**: a phase ring with today's moon, average cycle and period length, next-period estimate, and charts for phase timing, tags and cervical mucus.
+- **Calendar**: a month grid tinted by phase, with a Today card, predicted period days, and a day panel to add or review tags.
+- **Tags**: log symptoms, moods and notes by phase, shown as chips you can edit or remove.
+- **Cycles**: start a new cycle from a first day and length, and read the Phase Guide.
+- **Past Cycles**: archive finished cycles, search them, edit their tags, and swipe to delete one.
+- **Reminders**: optional notifications the day before and the day of your next period.
+- **Share**: export selected phases as a calendar (`.ics`) file, only when you choose to.
+- **Light and dark mode**: blush in light, deep plum in dark, with a moon for each phase: new, crescent, full, waning.
+- **Accessibility**: Dynamic Type up to accessibility sizes, VoiceOver labels, Reduce Motion support.
 
 ## Privacy
 
-All data stays on your device. No account, no ads, no tracking.
-
-## Tests
-
-Run tests with `xcodebuild test -scheme RhythmX -destination 'platform=iOS Simulator,name=<an installed iOS 18+ simulator>'` (list installed simulators with `xcrun simctl list devices available`).
-
----
+- Data lives in on-device `UserDefaults` and never leaves the phone unless you share an export.
+- No third-party SDKs, analytics, accounts or network calls.
+- Ships with a privacy manifest (`PrivacyInfo.xcprivacy`) and is intended for the App Store "Data Not Collected" label.
 
 ## Requirements
 
-- **iOS 18.0 or newer**  
-  The calendar is a custom SwiftUI grid; no UIKit calendar view is required.
+- iOS 18.0 or newer, iPhone
+- Xcode with the iOS 18 SDK
+- Swift 5, SwiftUI, Swift Charts
 
-- **Swift & SwiftUI**  
-  Requires SwiftUI and a current Xcode (one that includes the iOS 18 SDK).
+## Build and run
 
----
+1. Clone this repository.
+2. Open `RhythmX.xcodeproj` in Xcode.
+3. Select the `RhythmX` scheme and run on an iOS 18+ simulator or device.
 
-## Getting Started
+First launch shows a three-page onboarding. The last page sets your first cycle and generates its events. You can skip it and start from the **Cycles** tab instead.
 
-1. **Clone or download** this repository.
-2. **Open the project in a current Xcode**.
-3. **Run** on an iOS 18+ simulator or device.
+## Tests
 
-On first launch, you’ll see the **Onboarding** screen. Follow the steps to learn how to generate cycle events and add tags, or skip straight to the main interface. Once in the app, use the **Cycles** tab to generate your first cycle and dive into all the features.
+```sh
+xcodebuild test -scheme RhythmX \
+  -destination 'platform=iOS Simulator,name=<an installed iOS 18+ simulator>'
+```
 
-### Key Features
+List installed simulators with `xcrun simctl list devices available`.
 
-- **Cycles**  
-  Start a new cycle, read the phase guide, and review past cycles.
+## Project layout
 
-- **Tags**  
-  Review and edit tags by phase.
-
-- **Calendar Integration**  
-  Tap any date to see all events or edit them right away.
-
-- **Archiving**  
-  When a cycle ends, archive the events to keep a permanent record, then clear the calendar to start anew.
-
----
+```
+RhythmX/
+  Models/        EventStore, ArchivedDataStore, persistence
+  Services/      CycleGenerator, TagParser, CalendarMonthModel, PhaseGuideContent
+  Views/         Insights, Calendar, Tags, Cycles, Settings, Onboarding
+  Views/Components/  MoonPhaseView, WaveBackground, PhaseRingView, PhaseStrip, CardStyle
+  DesignSystem.swift  colors, spacing, shared styles
+RhythmXTests/    unit tests
+```
 
 ## Contributing
 
-We welcome contributions of all kinds-bug reports, feature enhancements, or documentation improvements. Here’s how you can help:
+Bug reports, ideas and pull requests are welcome.
 
-1. **Fork** this repo and create a feature branch.
-2. Make your changes.
-3. **Open a Pull Request** describing what you’ve done.
-4. We’ll review and merge or suggest changes.
+1. Fork the repo and create a feature branch.
+2. Make your change and run the tests.
+3. Open a pull request describing what changed and why.
 
----
+## Reporting issues
 
-## Reporting Issues
+Open an issue with the steps to reproduce, your iOS version and device model, and a screenshot if it helps.
 
-Encountered a bug or have a suggestion? Please open an **Issue** in this repository. Include:
+## Disclaimer
 
-- Steps to reproduce the problem (if any)
-- iOS version and device model
-- Logs or screenshots to help illustrate the issue
-
-We’ll do our best to address it quickly.
-
----
+RhythmX is a tracking tool, not medical advice. Predictions are estimates. Talk to a healthcare professional about health concerns.
 
 ## License
 
-This project is licensed under the [Apache License, Version 2.0](LICENSE). See the [LICENSE](LICENSE) file for details.
+Licensed under the [Apache License 2.0](LICENSE).
