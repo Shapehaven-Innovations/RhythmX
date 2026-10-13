@@ -7,12 +7,12 @@ final class ArchivedDataStoreTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        UserDefaults.standard.removeObject(forKey: PersistenceKeys.archivedData)
+        AppGroup.defaults.removeObject(forKey: PersistenceKeys.archivedData)
         store = ArchivedDataStore()
     }
 
     override func tearDown() {
-        UserDefaults.standard.removeObject(forKey: PersistenceKeys.archivedData)
+        AppGroup.defaults.removeObject(forKey: PersistenceKeys.archivedData)
         super.tearDown()
     }
 

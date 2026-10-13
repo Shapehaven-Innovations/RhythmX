@@ -37,8 +37,8 @@ final class TagParserTests: XCTestCase {
     }
 
     func testStoreRemoveTagInPhaseOnly() {
-        UserDefaults.standard.removeObject(forKey: PersistenceKeys.events)
-        defer { UserDefaults.standard.removeObject(forKey: PersistenceKeys.events) }
+        AppGroup.defaults.removeObject(forKey: PersistenceKeys.events)
+        defer { AppGroup.defaults.removeObject(forKey: PersistenceKeys.events) }
         let store = EventStore(preview: true)
         store.add(Event(eventType: .menstrual, date: Date(), note: "", tags: "Symptom:Cramps, Mood:Tired"))
         store.add(Event(eventType: .luteal, date: Date(), note: "", tags: "Mood:Tired"))
@@ -48,8 +48,8 @@ final class TagParserTests: XCTestCase {
     }
 
     func testStoreRemoveTagLeavesNonMatchingEventsUntouched() {
-        UserDefaults.standard.removeObject(forKey: PersistenceKeys.events)
-        defer { UserDefaults.standard.removeObject(forKey: PersistenceKeys.events) }
+        AppGroup.defaults.removeObject(forKey: PersistenceKeys.events)
+        defer { AppGroup.defaults.removeObject(forKey: PersistenceKeys.events) }
         let store = EventStore(preview: true)
         store.add(Event(eventType: .menstrual, date: Date(), note: "", tags: "Mood:Tired"))
         store.add(Event(eventType: .menstrual, date: Date().addingTimeInterval(86400), note: "", tags: "Cramps,, "))

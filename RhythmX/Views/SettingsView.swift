@@ -23,6 +23,7 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.large)
         }
+        .onChange(of: appSettings.colorSignature) { _, _ in AppGroup.reloadWidgets() }
     }
 
     // MARK: - Privacy

@@ -14,6 +14,8 @@ struct AppEntry: App {
 
     @State private var showSplash = true
 
+    init() { AppGroup.migrateIfNeeded() }
+
     var body: some Scene {
         WindowGroup {
             ZStack {

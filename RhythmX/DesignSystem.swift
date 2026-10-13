@@ -20,22 +20,22 @@ enum DS {
         )
 
         static var phase1: SwiftUI.Color {
-            guard let hex = UserDefaults.standard.string(forKey: "phaseColor1"),
+            guard let hex = AppGroup.defaults.string(forKey: "phaseColor1"),
                   let c = SwiftUI.Color(hex: hex) else { return phase1Default }
             return c
         }
         static var phase2: SwiftUI.Color {
-            guard let hex = UserDefaults.standard.string(forKey: "phaseColor2"),
+            guard let hex = AppGroup.defaults.string(forKey: "phaseColor2"),
                   let c = SwiftUI.Color(hex: hex) else { return phase2Default }
             return c
         }
         static var phase3: SwiftUI.Color {
-            guard let hex = UserDefaults.standard.string(forKey: "phaseColor3"),
+            guard let hex = AppGroup.defaults.string(forKey: "phaseColor3"),
                   let c = SwiftUI.Color(hex: hex) else { return phase3Default }
             return c
         }
         static var phase4: SwiftUI.Color {
-            guard let hex = UserDefaults.standard.string(forKey: "phaseColor4"),
+            guard let hex = AppGroup.defaults.string(forKey: "phaseColor4"),
                   let c = SwiftUI.Color(hex: hex) else { return phase4Default }
             return c
         }

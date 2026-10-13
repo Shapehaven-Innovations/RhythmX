@@ -20,7 +20,7 @@ class ArchivedDataStore: ObservableObject {
     }
 
     func loadArchivedData() {
-        guard let data = UserDefaults.standard.data(forKey: archivedDataKey) else { return }
+        guard let data = AppGroup.defaults.data(forKey: archivedDataKey) else { return }
         do {
             let decoded = try JSONDecoder().decode([ArchivedDataBlock].self, from: data)
             self.archivedBlocks = decoded
@@ -32,7 +32,8 @@ class ArchivedDataStore: ObservableObject {
     func saveArchivedData() {
         do {
             let data = try JSONEncoder().encode(archivedBlocks)
-            UserDefaults.standard.set(data, forKey: archivedDataKey)
+            AppGroup.defaults.set(data, forKey: archivedDataKey)
+            AppGroup.reloadWidgets()
         } catch {
             print("Error encoding archived data: \(error)")
         }

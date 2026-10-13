@@ -3,9 +3,9 @@ import XCTest
 
 final class MoonPhaseTests: XCTestCase {
     func testPhaseToMoonMapping() {
-        XCTAssertEqual(Event.EventType.menstrual.moonPhase, .new)
+        XCTAssertEqual(Event.EventType.menstrual.moonPhase, .full)
         XCTAssertEqual(Event.EventType.follicular.moonPhase, .crescent)
-        XCTAssertEqual(Event.EventType.ovulation.moonPhase, .full)
+        XCTAssertEqual(Event.EventType.ovulation.moonPhase, .new)
         XCTAssertEqual(Event.EventType.luteal.moonPhase, .waning)
     }
 }

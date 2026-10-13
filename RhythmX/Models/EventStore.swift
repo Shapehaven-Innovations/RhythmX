@@ -5,11 +5,6 @@
 import Foundation
 import SwiftUI
 
-enum PersistenceKeys {
-    static let events = "com.example.rhythm(x).events"
-    static let archivedData = "com.example.rhythm(x).archivedData"
-}
-
 @MainActor
 class EventStore: ObservableObject {
     @Published var events = [Event]()
@@ -102,14 +97,15 @@ class EventStore: ObservableObject {
     private func saveToUserDefaults() {
         do {
             let data = try JSONEncoder().encode(events)
-            UserDefaults.standard.set(data, forKey: eventsKey)
+            AppGroup.defaults.set(data, forKey: eventsKey)
+            AppGroup.reloadWidgets()
         } catch {
             print("Error encoding events: \(error)")
         }
     }
 
     private func loadFromUserDefaults() {
-        guard let data = UserDefaults.standard.data(forKey: eventsKey) else {
+        guard let data = AppGroup.defaults.data(forKey: eventsKey) else {
             return
         }
         do {
