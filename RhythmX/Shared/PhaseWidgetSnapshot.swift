@@ -15,11 +15,15 @@ struct PhaseWidgetSnapshot: Equatable {
     let isFertileToday: Bool
     let fertileEndsIn: Int?             // days until the last day of today's window (0 = ends today)
     let fertileStartsIn: Int?           // days until the next window starts; nil if in one or none upcoming
+    let cycleStartDate: Date?           // first logged day of the current cycle; nil when no cycle day applies
+    let averageCycleLength: Int?
+    let averagePeriodLength: Int?
 
     init(phase: Event.EventType?, cycleDay: Int?, daysUntilNext: Int?, overdueDays: Int? = nil,
          nextPhase: Event.EventType? = nil, daysUntilNextPhase: Int? = nil,
          cycleLength: Int? = nil, nextPeriodDate: Date? = nil,
-         isFertileToday: Bool = false, fertileEndsIn: Int? = nil, fertileStartsIn: Int? = nil) {
+         isFertileToday: Bool = false, fertileEndsIn: Int? = nil, fertileStartsIn: Int? = nil,
+         cycleStartDate: Date? = nil, averageCycleLength: Int? = nil, averagePeriodLength: Int? = nil) {
         self.phase = phase
         self.cycleDay = cycleDay
         self.daysUntilNext = daysUntilNext
@@ -31,6 +35,9 @@ struct PhaseWidgetSnapshot: Equatable {
         self.isFertileToday = isFertileToday
         self.fertileEndsIn = fertileEndsIn
         self.fertileStartsIn = fertileStartsIn
+        self.cycleStartDate = cycleStartDate
+        self.averageCycleLength = averageCycleLength
+        self.averagePeriodLength = averagePeriodLength
     }
 
     var isActive: Bool { cycleDay != nil }
@@ -44,7 +51,9 @@ struct PhaseWidgetSnapshot: Equatable {
         phase: .follicular, cycleDay: 8, daysUntilNext: 20,
         nextPhase: .ovulation, daysUntilNextPhase: 5, cycleLength: 28,
         nextPeriodDate: Calendar.current.date(byAdding: .day, value: 20, to: Date().startOfDay),
-        isFertileToday: true, fertileEndsIn: 7)
+        isFertileToday: true, fertileEndsIn: 7,
+        cycleStartDate: Calendar.current.date(byAdding: .day, value: -7, to: Date().startOfDay),
+        averageCycleLength: 28, averagePeriodLength: 5)
 
     static func make(events: [Event], archived: [ArchivedDataBlock], today: Date,
                      fertileOverrides: FertileOverrides = FertileOverrides()) -> PhaseWidgetSnapshot {
@@ -95,7 +104,10 @@ struct PhaseWidgetSnapshot: Equatable {
                                    daysUntilNext: until, overdueDays: overdue,
                                    nextPhase: nextPhase, daysUntilNextPhase: untilPhase,
                                    cycleLength: length, nextPeriodDate: until == nil ? nil : stats.nextPeriodEstimate,
-                                   isFertileToday: fertileToday, fertileEndsIn: endsIn, fertileStartsIn: startsIn)
+                                   isFertileToday: fertileToday, fertileEndsIn: endsIn, fertileStartsIn: startsIn,
+                                   cycleStartDate: stats.currentCycleDay == nil ? nil : events.map(\.date).min()?.startOfDay,
+                                   averageCycleLength: stats.averageCycleLength,
+                                   averagePeriodLength: stats.averagePeriodLength)
     }
 
     static func load(defaults: UserDefaults = AppGroup.defaults, today: Date = Date()) -> PhaseWidgetSnapshot {

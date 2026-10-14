@@ -42,7 +42,7 @@ struct PhaseWidgetView: View {
         }
         if snap.isFertileToday {
             parts.append((snap.fertileEndsIn ?? 0) == 0 ? "Fertile window ends today" : "Fertile window, ends in \(days(snap.fertileEndsIn ?? 0))")
-        } else if let s = snap.fertileStartsIn, family == .systemLarge {
+        } else if let s = snap.fertileStartsIn, family != .systemSmall {
             parts.append("Fertile window starts in \(days(s))")
         }
         if let o = snap.overdueDays { parts.append("Period \(days(o)) late") }
@@ -94,18 +94,51 @@ struct PhaseWidgetView: View {
             .background(Capsule().fill(tint.opacity(0.18)))
     }
 
-    /// Priority: period within 3 days, then fertile window, then the plain period countdown.
+    /// Always shows the countdown; it becomes a highlighted badge within 3 days of the period.
     @ViewBuilder
     private var smallPeriodLine: some View {
-        if let d = snap.daysUntilNext, snap.isPeriodSoon {
-            badge(periodLine(d), tint: periodColor)
-        } else if snap.isFertileToday {
-            badge("Fertile window", tint: settings.phaseColor(for: .ovulation))
-        } else if let d = snap.daysUntilNext {
-            Text(periodLine(d))
-                .font(.caption2.weight(.medium))
-                .foregroundColor(DS.Color.secondaryText)
+        if let d = snap.daysUntilNext {
+            if snap.isPeriodSoon {
+                badge(periodLine(d), tint: periodColor)
+            } else {
+                Text(periodLine(d))
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(periodColor)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
         }
+    }
+
+    @ViewBuilder
+    private var fertileChip: some View {
+        if snap.isFertileToday {
+            badge("Fertile", tint: settings.phaseColor(for: .ovulation))
+        }
+    }
+
+    @ViewBuilder
+    private var mediumFertileLine: some View {
+        if snap.isFertileToday || snap.fertileStartsIn != nil {
+            let tint = settings.phaseColor(for: .ovulation)
+            HStack(spacing: 6) {
+                Circle().fill(tint).frame(width: 6, height: 6)
+                Text(mediumFertileText)
+                    .font(.caption.weight(.medium))
+                    .foregroundColor(tint)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .padding(.bottom, 8)
+        }
+    }
+
+    private var mediumFertileText: String {
+        if snap.isFertileToday {
+            let e = snap.fertileEndsIn ?? 0
+            return e == 0 ? "Fertile · ends today" : "Fertile · ends in \(days(e))"
+        }
+        return "Fertile in \(days(snap.fertileStartsIn ?? 0))"
     }
 
     @ViewBuilder
@@ -159,6 +192,37 @@ struct PhaseWidgetView: View {
         .accessibilityHidden(true)
     }
 
+    @ViewBuilder
+    private var statsRow: some View {
+        let items: [(String, String)] = [
+            snap.cycleStartDate.map { ("CYCLE START", $0.formatted(.dateTime.month(.abbreviated).day())) },
+            snap.averageCycleLength.map { ("AVG CYCLE", days($0)) },
+            snap.averagePeriodLength.map { ("AVG PERIOD", days($0)) }
+        ].compactMap { $0 }
+        if !items.isEmpty {
+            HStack(spacing: 0) {
+                ForEach(Array(items.enumerated()), id: \.offset) { index, item in
+                    if index > 0 {
+                        Rectangle().fill(DS.Color.separator).frame(width: 1, height: 28)
+                    }
+                    VStack(spacing: 3) {
+                        Text(item.0)
+                            .font(.caption2.weight(.semibold))
+                            .tracking(0.6)
+                            .foregroundColor(DS.Color.secondaryText)
+                        Text(item.1)
+                            .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                            .foregroundColor(DS.Color.primaryText)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .padding(.vertical, 4)
+        }
+    }
+
     private func progressBar(day: Int, length: Int) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Day \(day) of \(length)")
@@ -205,7 +269,11 @@ struct PhaseWidgetView: View {
 
     private var small: some View {
         VStack(alignment: .leading, spacing: 0) {
-            moon
+            HStack(alignment: .top) {
+                moon
+                Spacer(minLength: 4)
+                fertileChip.padding(.top, 6)
+            }
             Spacer(minLength: 0)
             header
             smallPeriodLine.padding(.top, 6)
@@ -236,6 +304,7 @@ struct PhaseWidgetView: View {
                     .padding(.top, 8)
                 }
                 Spacer(minLength: 0)
+                mediumFertileLine
                 phaseStrip(labels: false)
                     .padding(.bottom, 6)
             }
@@ -264,6 +333,7 @@ struct PhaseWidgetView: View {
                 }
             }
             fertileBanner
+            statsRow
             Spacer(minLength: 0)
             if let day = snap.cycleDay, let length = snap.cycleLength, length > 0 {
                 progressBar(day: day, length: length)

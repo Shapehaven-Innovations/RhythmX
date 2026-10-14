@@ -173,4 +173,33 @@ final class PhaseWidgetSnapshotTests: XCTestCase {
         XCTAssertFalse(s.isFertileToday)
         XCTAssertNil(s.fertileStartsIn); XCTAssertNil(s.fertileEndsIn)
     }
+
+    // MARK: - Cycle start and averages
+
+    func testCycleStartAndAveragesFromCurrentCycle() {
+        let s = PhaseWidgetSnapshot.make(events: cycleEvents, archived: [], today: day(13))
+        XCTAssertEqual(s.cycleStartDate, anchor)
+        XCTAssertEqual(s.averageCycleLength, 28)
+        XCTAssertEqual(s.averagePeriodLength, 5)
+    }
+
+    func testAveragesPreferArchivedCycles() {
+        let start = Calendar.current.date(byAdding: .day, value: -90, to: anchor)!
+        let archivedEvents = CycleGenerator.events(startDate: start, cycleLength: 30)
+        let grouped = Dictionary(grouping: archivedEvents, by: { $0.eventType })
+            .map { ArchivedDataBlock.PhaseEvents(eventType: $0.key, events: $0.value) }
+        let block = ArchivedDataBlock(date: start, groupedEvents: grouped)
+        let s = PhaseWidgetSnapshot.make(events: cycleEvents, archived: [block], today: day(13))
+        XCTAssertEqual(s.averageCycleLength, 30)
+        XCTAssertEqual(s.cycleStartDate, anchor)
+    }
+
+    func testNoCycleStartWhenInactive() {
+        let overdue = PhaseWidgetSnapshot.make(events: cycleEvents, archived: [], today: day(40))
+        XCTAssertNil(overdue.cycleStartDate)
+        let empty = PhaseWidgetSnapshot.make(events: [], archived: [], today: anchor)
+        XCTAssertNil(empty.cycleStartDate)
+        XCTAssertNil(empty.averageCycleLength)
+        XCTAssertNil(empty.averagePeriodLength)
+    }
 }
