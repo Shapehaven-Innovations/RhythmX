@@ -27,6 +27,9 @@ enum TagLibrary {
         .cervicalMucus: [
             "Dry", "Sticky", "Creamy", "Egg White"
         ],
+        .basalTemp: [
+            "Elevated BBT"
+        ],
         .other: [
             "Poor Sleep", "Acne", "Water Retention", "Hot Flashes",
             "Night Sweats", "Mild Cramping"

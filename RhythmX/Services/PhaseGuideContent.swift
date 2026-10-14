@@ -96,6 +96,16 @@ Common Mood & Symptoms
 Mood: Often an uptick in libido, energy, and confidence due to peaking estrogen and testosterone levels.
 Physical Symptoms: Some individuals experience mild pelvic twinges (Mittelschmerz), increased cervical mucus (clear, stretchy, “egg white” consistency), possibly a slight increase in basal body temperature after ovulation.
 
+Tracking Your Fertile Window
+Fertile Window: In RhythmX, the fertile window runs from five days before the Ovulatory phase through its last day. Egg White cervical mucus and an Elevated BBT tag can help you confirm it.
+Adjusting It: Tap a day on the Calendar and use “Fertile window” to add or remove that day if your own signs say otherwise.
+Not Contraception: The window shown is an estimate and not a reliable method of birth control.
+
+Basal Body Temperature (BBT)
+What It Is: Your resting temperature, taken first thing in the morning before getting out of bed. Progesterone raises it by roughly 0.3–0.5 °C (0.5–1 °F) after ovulation.
+Confirms, Doesn’t Predict: A rise that stays up for three or more days suggests ovulation has already happened. Log the “Elevated BBT” tag (under Basal Temp) on those days.
+Reading It Well: Measure at the same time each day after at least three hours of sleep. Illness, alcohol, travel, and poor sleep can shift readings.
+
 Tips/Benefits:
 If trying to conceive, having intercourse in the days leading up to and including ovulation is key.
 Staying hydrated and listening to your body can help manage any mild ovulatory discomfort.
@@ -117,6 +127,10 @@ If no implantation occurs, progesterone production drops, leading to the sheddin
 Common Mood & Symptoms
 Mood: Potential for PMS/PMDD symptoms due to falling progesterone and estrogen toward the end of the luteal phase if pregnancy does not occur. Symptoms may include irritability, low mood, anxiety, mood swings.
 Physical Symptoms: Bloating, breast tenderness, fatigue, food cravings, changes in bowel habits, possible fluid retention.
+
+Basal Body Temperature (BBT)
+Elevated BBT: Temperature typically stays higher through the luteal phase while progesterone is elevated, then drops shortly before or as your period starts.
+Staying Elevated: If it stays up for about 18 days or more, it may be worth taking a pregnancy test and talking with a clinician.
 
 Tips/Benefits:
 Focus on nutrient-dense foods, balanced meals, and adequate hydration to stabilize mood and energy.

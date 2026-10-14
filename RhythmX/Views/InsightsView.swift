@@ -83,12 +83,10 @@ struct InsightsView: View {
                     .foregroundStyle(by: .value("Category", item.categoryName))
                     .cornerRadius(2)
                 }
-                .chartForegroundStyleScale([
-                    "Symptom": DS.Color.phase1Default, "Mood": DS.Color.phase4Default,
-                    "Dietary": DS.Color.phase3Default, "Exercise": DS.Color.phase2Default,
-                    "Medication": DS.Color.waveMid, "Cervical Mucus": DS.Color.waveBack,
-                    "Other": DS.Color.secondaryText.opacity(0.4)
-                ])
+                .chartForegroundStyleScale(
+                    domain: InsightsViewModel.categoryNames,
+                    range: InsightsViewModel.categoryNames.map { InsightsViewModel.categoryColors[$0] ?? .gray }
+                )
                 .chartXScale(domain: 0...100)
                 .chartXAxis {
                     AxisMarks(values: [0, 25, 50, 75, 100]) { value in

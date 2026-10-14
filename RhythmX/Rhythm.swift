@@ -9,6 +9,7 @@ struct AppEntry: App {
     @StateObject var myEvents          = EventStore(preview: false)
     @StateObject var archivedDataStore = ArchivedDataStore()
     @StateObject var appSettings       = AppSettings()
+    @StateObject var fertileStore      = FertileStore()
 
     @AppStorage("didFinishOnboarding") var didFinishOnboarding = false
 
@@ -38,6 +39,7 @@ struct AppEntry: App {
                     .environmentObject(myEvents)
                     .environmentObject(archivedDataStore)
                     .environmentObject(appSettings)
+                    .environmentObject(fertileStore)
             } else {
                 OnboardingView()
                     .environmentObject(myEvents)

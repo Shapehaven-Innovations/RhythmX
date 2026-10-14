@@ -31,6 +31,14 @@ struct EventsCalendarView: View {
                         .foregroundColor(DS.Color.secondaryText)
                 }
             }
+            HStack(spacing: DS.Spacing.xs) {
+                Capsule()
+                    .fill(appSettings.phaseColor(for: .ovulation))
+                    .frame(width: 12, height: 3)
+                Text("Fertile window")
+                    .font(DS.Font.micro)
+                    .foregroundColor(DS.Color.secondaryText)
+            }
         }
     }
 
@@ -82,4 +90,5 @@ struct EventsCalendarView: View {
         .environmentObject(EventStore(preview: true))
         .environmentObject(ArchivedDataStore())
         .environmentObject(AppSettings())
+        .environmentObject(FertileStore())
 }

@@ -116,12 +116,7 @@ struct InsightsViewModel {
     }
 
     var tagCategoryTotals: [CategoryTotal] {
-        let colorMap: [String: Color] = [
-            "Symptom": DS.Color.phase1Default, "Mood": DS.Color.phase4Default,
-            "Dietary": DS.Color.phase3Default, "Exercise": DS.Color.phase2Default,
-            "Medication": DS.Color.waveMid, "Cervical Mucus": DS.Color.waveBack,
-            "Other": DS.Color.secondaryText.opacity(0.4)
-        ]
+        let colorMap = Self.categoryColors
         var freq: [String: Int] = [:]
         let allEvents = events + archivedBlocks.flatMap { $0.groupedEvents.flatMap { $0.events } }
         for event in allEvents {
@@ -214,13 +209,19 @@ struct InsightsViewModel {
         }
     }
 
+    /// One color per tag category; shared by the legend and the category totals.
+    static let categoryColors: [String: Color] = [
+        "Symptom": DS.Color.phase1Default, "Mood": DS.Color.phase4Default,
+        "Dietary": DS.Color.phase3Default, "Exercise": DS.Color.phase2Default,
+        "Medication": DS.Color.waveMid, "Cervical Mucus": DS.Color.waveBack,
+        "Basal Temp": DS.Color.moon,
+        "Other": DS.Color.secondaryText.opacity(0.4)
+    ]
+
+    static let categoryNames = ["Symptom", "Mood", "Dietary", "Exercise", "Medication", "Cervical Mucus", "Basal Temp", "Other"]
+
     var categoryLegendItems: [(name: String, color: Color)] {
-        [
-            ("Symptom", DS.Color.phase1Default), ("Mood", DS.Color.phase4Default),
-            ("Dietary", DS.Color.phase3Default), ("Exercise", DS.Color.phase2Default),
-            ("Medication", DS.Color.waveMid), ("Cervical Mucus", DS.Color.waveBack),
-            ("Other", DS.Color.secondaryText.opacity(0.4))
-        ]
+        Self.categoryNames.map { ($0, Self.categoryColors[$0] ?? .gray) }
     }
 
     func mucusLevel(_ value: String) -> Int {

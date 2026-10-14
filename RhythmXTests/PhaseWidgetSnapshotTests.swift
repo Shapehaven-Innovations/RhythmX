@@ -74,4 +74,103 @@ final class PhaseWidgetSnapshotTests: XCTestCase {
         XCTAssertEqual(entries[1].date, day(14).startOfDay)
         XCTAssertEqual(entries[2].date, day(15).startOfDay)
     }
+
+    // MARK: - Next phase / cycle length
+
+    func testNextPhaseMidCycle() {
+        let events = CycleGenerator.events(startDate: anchor, cycleLength: 28)
+        let today = day(13)
+        let cur = events.first { $0.date.startOfDay == today.startOfDay }!.eventType
+        let expected = events.filter { $0.date.startOfDay > today.startOfDay && $0.eventType != cur }
+            .min { $0.date < $1.date }!
+        let s = PhaseWidgetSnapshot.make(events: events, archived: [], today: today)
+        XCTAssertEqual(s.nextPhase, expected.eventType)
+        XCTAssertEqual(s.daysUntilNextPhase,
+                       Calendar.current.dateComponents([.day], from: today.startOfDay, to: expected.date.startOfDay).day)
+        XCTAssertEqual(s.cycleLength, 28)
+        XCTAssertEqual(s.nextPeriodDate, day(28))
+    }
+
+    func testLastPhaseRollsIntoMenstrualAtPeriodDate() {
+        let events = CycleGenerator.events(startDate: anchor, cycleLength: 28)
+        let s = PhaseWidgetSnapshot.make(events: events, archived: [], today: day(20))
+        XCTAssertEqual(s.phase, .luteal)
+        XCTAssertEqual(s.nextPhase, .menstrual)
+        XCTAssertEqual(s.daysUntilNextPhase, 8)
+        XCTAssertEqual(s.daysUntilNextPhase, s.daysUntilNext)
+    }
+
+    func testLastDayOfCycleNextPhaseIsTomorrow() {
+        let events = CycleGenerator.events(startDate: anchor, cycleLength: 28)
+        let s = PhaseWidgetSnapshot.make(events: events, archived: [], today: day(27))
+        XCTAssertEqual(s.nextPhase, .menstrual)
+        XCTAssertEqual(s.daysUntilNextPhase, 1)
+    }
+
+    func testNoNextPhaseWithoutCycleDayOrWhenInactive() {
+        let empty = PhaseWidgetSnapshot.make(events: [], archived: [], today: anchor)
+        XCTAssertNil(empty.nextPhase); XCTAssertNil(empty.daysUntilNextPhase); XCTAssertNil(empty.cycleLength)
+
+        var events = CycleGenerator.events(startDate: anchor, cycleLength: 28)
+        events.removeAll { $0.date.startOfDay == day(13).startOfDay }   // gap day: no current phase
+        let gap = PhaseWidgetSnapshot.make(events: events, archived: [], today: day(13))
+        XCTAssertNil(gap.nextPhase)
+
+        let overdue = PhaseWidgetSnapshot.make(events: CycleGenerator.events(startDate: anchor, cycleLength: 28), archived: [], today: day(40))
+        XCTAssertNil(overdue.nextPhase); XCTAssertNil(overdue.cycleLength)
+    }
+
+    func testPeriodSoonThreshold() {
+        XCTAssertTrue(PhaseWidgetSnapshot(phase: .luteal, cycleDay: 25, daysUntilNext: 3).isPeriodSoon)
+        XCTAssertTrue(PhaseWidgetSnapshot(phase: .luteal, cycleDay: 27, daysUntilNext: 1).isPeriodSoon)
+        XCTAssertFalse(PhaseWidgetSnapshot(phase: .luteal, cycleDay: 24, daysUntilNext: 4).isPeriodSoon)
+        XCTAssertFalse(PhaseWidgetSnapshot(phase: nil, cycleDay: nil, daysUntilNext: nil).isPeriodSoon)
+    }
+
+    // MARK: - Fertile window
+
+    private var cycleEvents: [Event] { CycleGenerator.events(startDate: anchor, cycleLength: 28) }
+
+    func testInsideFertileWindow() {
+        let s = PhaseWidgetSnapshot.make(events: cycleEvents, archived: [], today: day(8))
+        XCTAssertTrue(s.isFertileToday)
+        XCTAssertEqual(s.fertileEndsIn, 7)       // window runs through day(15)
+        XCTAssertNil(s.fertileStartsIn)
+    }
+
+    func testLastFertileDayEndsToday() {
+        let s = PhaseWidgetSnapshot.make(events: cycleEvents, archived: [], today: day(15))
+        XCTAssertTrue(s.isFertileToday)
+        XCTAssertEqual(s.fertileEndsIn, 0)
+    }
+
+    func testBeforeWindowCountsDown() {
+        let s = PhaseWidgetSnapshot.make(events: cycleEvents, archived: [], today: day(5))
+        XCTAssertFalse(s.isFertileToday)
+        XCTAssertEqual(s.fertileStartsIn, 3)
+        XCTAssertNil(s.fertileEndsIn)
+    }
+
+    func testAfterWindowHasNothingUpcoming() {
+        let s = PhaseWidgetSnapshot.make(events: cycleEvents, archived: [], today: day(16))
+        XCTAssertFalse(s.isFertileToday)
+        XCTAssertNil(s.fertileStartsIn)
+        XCTAssertNil(s.fertileEndsIn)
+    }
+
+    func testManualOverridesChangeSnapshot() {
+        var o = FertileOverrides()
+        o.removed = [FertileWindow.dayKey(day(8))]
+        o.added = [FertileWindow.dayKey(day(20))]
+        let early = PhaseWidgetSnapshot.make(events: cycleEvents, archived: [], today: day(7), fertileOverrides: o)
+        XCTAssertEqual(early.fertileStartsIn, 2)                     // day 8 removed, window now starts day 9
+        let late = PhaseWidgetSnapshot.make(events: cycleEvents, archived: [], today: day(16), fertileOverrides: o)
+        XCTAssertEqual(late.fertileStartsIn, 4)                      // manual day(20)
+    }
+
+    func testNoDataHasNoFertileInfo() {
+        let s = PhaseWidgetSnapshot.make(events: [], archived: [], today: anchor)
+        XCTAssertFalse(s.isFertileToday)
+        XCTAssertNil(s.fertileStartsIn); XCTAssertNil(s.fertileEndsIn)
+    }
 }

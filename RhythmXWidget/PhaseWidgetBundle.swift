@@ -16,6 +16,6 @@ struct PhaseWidget: Widget {
         }
         .configurationDisplayName("Cycle Phase")
         .description("Your current phase, cycle day, and next period.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }

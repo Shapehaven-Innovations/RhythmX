@@ -14,6 +14,7 @@ enum TagCategory: String, CaseIterable {
     case mood           = "Mood"
     case symptom        = "Symptom"
     case cervicalMucus  = "Cervical Mucus"
+    case basalTemp      = "Basal Temp"
     case other          = "Other"
 }
 

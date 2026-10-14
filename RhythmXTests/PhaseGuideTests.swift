@@ -30,4 +30,16 @@ final class PhaseGuideTests: XCTestCase {
             XCTAssertTrue(e.sections.allSatisfy { !$0.lines.isEmpty })
         }
     }
+
+    func testBBTAndFertileWindowGuidance() {
+        let ovulatory = PhaseGuideParser.parse(PhaseGuideContent.raw[2])
+        let luteal = PhaseGuideParser.parse(PhaseGuideContent.raw[3])
+        XCTAssertTrue(ovulatory.sections.map(\.title).contains("Tracking Your Fertile Window"))
+        XCTAssertTrue(ovulatory.sections.map(\.title).contains("Basal Body Temperature (BBT)"))
+        XCTAssertTrue(luteal.sections.map(\.title).contains("Basal Body Temperature (BBT)"))
+
+        let text = (ovulatory.sections + luteal.sections).flatMap(\.lines).joined(separator: " ")
+        XCTAssertTrue(text.contains("Elevated BBT"))
+        XCTAssertTrue(text.contains("not a reliable method of birth control"))
+    }
 }

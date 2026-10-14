@@ -5,6 +5,7 @@ import SwiftUI
 struct PhaseCalendarView: View {
     @EnvironmentObject var eventStore: EventStore
     @EnvironmentObject var appSettings: AppSettings
+    @EnvironmentObject var fertileStore: FertileStore
     @Binding var selectedDate: Date?
     let predictedStart: Date?
     @State private var month = CalendarMonthModel(containing: Date())
@@ -48,6 +49,7 @@ struct PhaseCalendarView: View {
         let color = phase.map { appSettings.phaseColor(for: $0) }
         let isToday = Calendar.current.isDateInToday(day.date)
         let isSelected = selectedDate.map { Calendar.current.isDate($0, inSameDayAs: day.date) } ?? false
+        let fertile = fertileStore.isFertile(day.date, events: eventStore.events)
         let predicted = phase == nil && day.date.startOfDay >= Date().startOfDay && CalendarPhaseLookup.isPredictedPeriod(day.date, start: predictedStart)
 
         return Button {
@@ -60,6 +62,14 @@ struct PhaseCalendarView: View {
                 .background(
                     Circle().fill(isToday ? (color ?? Color.accentColor) : (color?.opacity(0.22) ?? .clear))
                 )
+                .overlay(alignment: .bottom) {
+                    if fertile {
+                        Capsule()
+                            .fill(isToday ? DS.Color.onAccent : appSettings.phaseColor(for: .ovulation))
+                            .frame(width: 14, height: 3)
+                            .padding(.bottom, 4)
+                    }
+                }
                 .overlay(
                     Circle().strokeBorder(
                         predicted ? appSettings.phaseColor(for: .menstrual) : (isSelected ? Color.accentColor : .clear),
@@ -72,6 +82,7 @@ struct PhaseCalendarView: View {
             "\(day.date.formatted(date: .complete, time: .omitted))"
             + (phase.map { ", \($0.displayName)" } ?? "")
             + (predicted ? ", predicted period" : "")
+            + (fertile ? ", fertile window" : "")
         )
     }
 }
