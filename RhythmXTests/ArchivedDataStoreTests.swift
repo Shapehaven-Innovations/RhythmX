@@ -43,4 +43,17 @@ final class ArchivedDataStoreTests: XCTestCase {
         let reloaded = ArchivedDataStore()
         XCTAssertTrue(reloaded.archivedBlocks.isEmpty)
     }
+
+    func testUpdateArchivedEventTagKeepsBlockMode() {
+        let event = Event(id: "E-MODE", eventType: .menstrual, date: Date(), note: "", tags: "old")
+        let phase = ArchivedDataBlock.PhaseEvents(eventType: .menstrual, events: [event])
+        let block = ArchivedDataBlock(date: Date(), groupedEvents: [phase], mode: .planning)
+        store.appendArchivedBlock(block)
+
+        store.updateArchivedEventTag(eventId: "E-MODE", newTags: "new")
+
+        let stored = store.archivedBlocks.first { $0.id == block.id }
+        XCTAssertEqual(stored?.mode, .planning)
+        XCTAssertEqual(stored?.groupedEvents.first?.events.first?.tags, "new")
+    }
 }

@@ -14,7 +14,9 @@ struct SplashView: View {
 
     var body: some View {
         ZStack {
-            Color("LaunchBackground").ignoresSafeArea()
+            // The theme's page colour, so a Plus theme does not flash the Blush launch colour here. The launch
+            // storyboard keeps the LaunchBackground asset (it cannot read the theme); for Blush both are equal.
+            DS.Color.pageBackground.ignoresSafeArea()
             WaveBackground(drift: true)
                 .frame(maxHeight: .infinity, alignment: .bottom)
                 .frame(height: 300)

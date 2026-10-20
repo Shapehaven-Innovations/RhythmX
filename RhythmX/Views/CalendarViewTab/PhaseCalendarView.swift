@@ -45,11 +45,11 @@ struct PhaseCalendarView: View {
     }
 
     private func dayCell(_ day: CalendarDay) -> some View {
-        let phase = CalendarPhaseLookup.phase(on: day.date, events: eventStore.events)
+        let phase = CalendarPhaseLookup.phase(on: day.date, events: eventStore.cycleEvents)
         let color = phase.map { appSettings.phaseColor(for: $0) }
         let isToday = Calendar.current.isDateInToday(day.date)
         let isSelected = selectedDate.map { Calendar.current.isDate($0, inSameDayAs: day.date) } ?? false
-        let fertile = fertileStore.isFertile(day.date, events: eventStore.events)
+        let fertile = fertileStore.isFertile(day.date, events: eventStore.cycleEvents)
         let predicted = phase == nil && day.date.startOfDay >= Date().startOfDay && CalendarPhaseLookup.isPredictedPeriod(day.date, start: predictedStart)
 
         return Button {
@@ -60,7 +60,7 @@ struct PhaseCalendarView: View {
                 .foregroundColor(isToday ? DS.Color.onAccent : DS.Color.primaryText)
                 .frame(maxWidth: .infinity, minHeight: 40)
                 .background(
-                    Circle().fill(isToday ? (color ?? Color.accentColor) : (color?.opacity(0.22) ?? .clear))
+                    Circle().fill(isToday ? (color ?? DS.Color.accent) : (color?.opacity(0.22) ?? .clear))
                 )
                 .overlay(alignment: .bottom) {
                     if fertile {
@@ -72,7 +72,7 @@ struct PhaseCalendarView: View {
                 }
                 .overlay(
                     Circle().strokeBorder(
-                        predicted ? appSettings.phaseColor(for: .menstrual) : (isSelected ? Color.accentColor : .clear),
+                        predicted ? appSettings.phaseColor(for: .menstrual) : (isSelected ? DS.Color.accent : .clear),
                         style: StrokeStyle(lineWidth: isSelected ? 2 : 1.5, dash: predicted && !isSelected ? [3, 2] : [])
                     )
                 )

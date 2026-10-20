@@ -62,7 +62,7 @@ struct PhasesFactsView: View {
             }
             .padding(DS.Spacing.md)
         }
-        .background(DS.Color.pageBackground.ignoresSafeArea())
+        .themedPage()
         .navigationTitle("Your Phases")
     }
 

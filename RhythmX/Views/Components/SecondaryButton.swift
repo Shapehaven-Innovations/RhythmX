@@ -11,14 +11,14 @@ struct SecondaryButton: View {
         Button(action: action) {
             Text(title)
                 .font(DS.Font.label.weight(.semibold))
-                .foregroundColor(isDisabled ? Color.accentColor.opacity(0.4) : Color.accentColor)
+                .foregroundColor(isDisabled ? DS.Color.accent.opacity(0.4) : DS.Color.accent)
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
                 .background(Color.clear)
                 .cornerRadius(DS.Radius.button)
                 .overlay(
                     RoundedRectangle(cornerRadius: DS.Radius.button)
-                        .stroke(isDisabled ? Color.accentColor.opacity(0.4) : Color.accentColor, lineWidth: 1.5)
+                        .stroke(isDisabled ? DS.Color.accent.opacity(0.4) : DS.Color.accent, lineWidth: 1.5)
                 )
         }
         .disabled(isDisabled)

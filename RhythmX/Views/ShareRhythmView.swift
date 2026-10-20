@@ -34,7 +34,7 @@ struct ShareRhythmView: View {
             }
             .padding(DS.Spacing.md)
         }
-        .background(DS.Color.pageBackground.ignoresSafeArea())
+        .themedPage()
         .navigationTitle("Share RhythmX")
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) {
@@ -63,7 +63,7 @@ struct ShareRhythmView: View {
 
     private var phaseRanges: [PhaseRange] {
         Event.EventType.allCases.compactMap { phase in
-            let dates = myEvents.events
+            let dates = myEvents.cycleEvents
                 .filter { $0.eventType == phase }
                 .map { $0.date }
             guard let start = dates.min(), let end = dates.max() else { return nil }
@@ -74,7 +74,7 @@ struct ShareRhythmView: View {
     // MARK: - Actions
 
     private func share() {
-        let data = ICSExporter.export(events: myEvents.events, sharerName: appSettings.sharerName)
+        let data = ICSExporter.export(events: myEvents.cycleEvents, sharerName: appSettings.sharerName)
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("RhythmX-\(UUID().uuidString).ics")
         do {

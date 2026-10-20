@@ -20,8 +20,11 @@ enum FertileWindow {
     }
 
     /// Auto window from the logged Ovulation-phase days; empty when none are logged.
+    /// Menopause entries are ignored: they have no fertile window.
     static func autoDays(events: [Event], calendar: Calendar = .current) -> Set<String> {
-        let dates = events.filter { $0.eventType == .ovulation }.map { calendar.startOfDay(for: $0.date) }
+        let dates = events
+            .filter { $0.eventType == .ovulation && $0.effectiveMode != .menopause }
+            .map { calendar.startOfDay(for: $0.date) }
         guard let first = dates.min(), let last = dates.max(),
               let start = calendar.date(byAdding: .day, value: -daysBeforeOvulation, to: first) else { return [] }
         var result = Set<String>()

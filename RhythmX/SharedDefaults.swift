@@ -6,6 +6,11 @@ import WidgetKit
 enum PersistenceKeys {
     static let events = "com.example.rhythm(x).events"
     static let archivedData = "com.example.rhythm(x).archivedData"
+    /// Entitlement cache written by `PurchaseStore`, read by the widgets through `Entitlement.load(from:)`.
+    static let plusExpiry = "com.example.rhythm(x).plusExpiry"
+    static let dayPassExpiry = "com.example.rhythm(x).dayPassExpiry"
+    /// Day Pass transaction ids already applied, so an unfinished purchase is granted exactly once.
+    static let dayPassTransactions = "com.example.rhythm(x).dayPassTransactions"
 }
 
 enum AppGroup {

@@ -13,7 +13,7 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            DS.Color.pageBackground.ignoresSafeArea()
+            ThemedPageBackground().ignoresSafeArea()
             TabView(selection: $page) {
                 welcomePage.tag(0)
                 privacyPage.tag(1)
@@ -95,24 +95,25 @@ struct OnboardingView: View {
 
     private func promise(_ text: String) -> some View {
         HStack(spacing: DS.Spacing.sm) {
-            Image(systemName: "checkmark.circle.fill").foregroundColor(.accentColor)
+            Image(systemName: "checkmark.circle.fill").foregroundColor(DS.Color.accent)
             Text(text).font(DS.Font.label).foregroundColor(DS.Color.primaryText)
         }
     }
 
     // MARK: - Controls
 
-    /// Page 1 sits over the plum waves, so Skip uses a white on-wave style instead of SecondaryButton.
+    /// Page 1 sits over the waves, so Skip uses the theme's on-wave colour instead of SecondaryButton
+    /// (white on Blush; on a Plus theme the colour that reads on its accent, which the waves come from).
     private var onWaveSkip: some View {
         Button { didFinishOnboarding = true } label: {
             Text("Skip")
                 .font(DS.Font.label.weight(.semibold))
-                .foregroundColor(Color.white)
+                .foregroundColor(DS.Color.onWave)
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
                 .overlay(
                     RoundedRectangle(cornerRadius: DS.Radius.button)
-                        .stroke(Color.white, lineWidth: 1.5)
+                        .stroke(DS.Color.onWave, lineWidth: 1.5)
                 )
                 .contentShape(Rectangle())
         }
@@ -124,7 +125,7 @@ struct OnboardingView: View {
             HStack(spacing: 6) {
                 ForEach(0..<3) { i in
                     Capsule()
-                        .fill(i == page ? Color.accentColor : DS.Color.separator)
+                        .fill(i == page ? DS.Color.accent : DS.Color.separator)
                         .frame(width: i == page ? 16 : 6, height: 6)
                 }
             }
@@ -139,7 +140,8 @@ struct OnboardingView: View {
                 }
             } else {
                 PrimaryButton(title: "Start tracking") {
-                    myEvents.generateCycleEvents(startDate: startDate, cycleLength: cycleLength)
+                    // Skipped when a restore already brought events in.
+                    myEvents.generateInitialCycleEventsIfEmpty(startDate: startDate, cycleLength: cycleLength)
                     didFinishOnboarding = true
                 }
                 SecondaryButton(title: "Set up later") { didFinishOnboarding = true }

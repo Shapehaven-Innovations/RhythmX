@@ -2,19 +2,40 @@
 
 import SwiftUI
 
+/// The two segments under the Tags title. "Tags" is the phase cards; "Patterns" is TagPatternsView.
+enum TagsSegment: String, CaseIterable, Identifiable {
+    case tags = "Tags"
+    case patterns = "Patterns"
+    var id: String { rawValue }
+}
+
 struct EventsListView: View {
+    /// Owned by the tab view so a weekly check-in tap can land on Patterns before this tab has ever been shown.
+    @Binding var segment: TagsSegment
     @EnvironmentObject var myEvents: EventStore
     @EnvironmentObject var appSettings: AppSettings
     @State private var showTagForm = false
     @State private var editingPhase: Event.EventType? = nil
     @State private var pendingRemoval: (chip: TagChip, phase: Event.EventType)? = nil
 
+    init(segment: Binding<TagsSegment>) {
+        _segment = segment
+    }
+
     var body: some View {
         NavigationStack {
-            Group {
-                if myEvents.events.isEmpty { emptyState } else { phaseCards }
+            VStack(spacing: 0) {
+                TagsSegmentPicker(segment: $segment)
+                    .padding(.horizontal, DS.Spacing.md)
+                    .padding(.top, DS.Spacing.sm)
+                switch segment {
+                case .tags:
+                    if myEvents.cycleEvents.isEmpty { emptyState } else { phaseCards }
+                case .patterns:
+                    TagPatternsView()
+                }
             }
-            .background(DS.Color.pageBackground.ignoresSafeArea())
+            .themedPage()
             .navigationTitle("Tags")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -22,7 +43,8 @@ struct EventsListView: View {
                         Image(systemName: "plus.circle.fill").imageScale(.large)
                     }
                     .accessibilityLabel("Add tag")
-                    .disabled(myEvents.events.isEmpty)
+                    // Menopause needs no cycle: the form creates a carrier event for the day.
+                    .disabled(appSettings.trackingMode != .menopause && myEvents.cycleEvents.isEmpty)
                 }
             }
             .sheet(isPresented: $showTagForm) { TagFormView() }
@@ -104,6 +126,66 @@ struct EventsListView: View {
     }
 }
 
+// MARK: - Tags | Patterns pill
+/// Same pill style as ModeSwitcher on Insights, for the two Tags segments.
+private struct TagsSegmentPicker: View {
+    @Binding var segment: TagsSegment
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Namespace private var selection
+
+    var body: some View {
+        (dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(spacing: 2))
+            : AnyLayout(HStackLayout(spacing: 2))) {
+            ForEach(TagsSegment.allCases) { candidate in
+                option(candidate)
+            }
+        }
+        .padding(2)
+        .background(
+            RoundedRectangle(cornerRadius: DS.Radius.button, style: .continuous)
+                .fill(Color(UIColor.tertiarySystemFill))
+        )
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Tags view")
+        .accessibilityValue(segment.rawValue)
+    }
+
+    private func option(_ candidate: TagsSegment) -> some View {
+        let isSelected = candidate == segment
+        return Button {
+            guard !isSelected else { return }
+            if reduceMotion {
+                segment = candidate
+            } else {
+                withAnimation(.easeInOut(duration: 0.2)) { segment = candidate }
+            }
+        } label: {
+            Text(candidate.rawValue)
+                .font(DS.Font.label.weight(isSelected ? .semibold : .medium))
+                .foregroundColor(DS.Color.primaryText)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .padding(.vertical, DS.Spacing.sm)
+                .padding(.horizontal, DS.Spacing.xs)
+                .frame(maxWidth: .infinity)
+                .background {
+                    if isSelected {
+                        RoundedRectangle(cornerRadius: DS.Radius.button - 2, style: .continuous)
+                            .fill(DS.Color.cardBackground)
+                            .shadow(color: Color.black.opacity(0.12), radius: 2, x: 0, y: 1)
+                            .matchedGeometryEffect(id: "selected", in: selection)
+                    }
+                }
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(candidate.rawValue)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+}
+
 // MARK: - Phase Tag Editor Sheet
 private struct PhaseTagEditorSheet: View {
     let phase: Event.EventType
@@ -113,7 +195,7 @@ private struct PhaseTagEditorSheet: View {
     @State private var editingTags: [String: String] = [:]
 
     private var phaseEvents: [Event] {
-        myEvents.events.filter { $0.eventType == phase }.sorted { $0.date < $1.date }
+        myEvents.cycleEvents.filter { $0.eventType == phase }.sorted { $0.date < $1.date }
     }
 
     private func tagBinding(for event: Event) -> Binding<String> {
@@ -173,6 +255,9 @@ private struct PhaseTagEditorSheet: View {
 }
 
 #Preview {
-    EventsListView()
+    @Previewable @State var segment: TagsSegment = .tags
+    EventsListView(segment: $segment)
         .environmentObject(EventStore(preview: true))
+        .environmentObject(ArchivedDataStore())
+        .environmentObject(AppSettings())
 }

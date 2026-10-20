@@ -3,7 +3,11 @@ import WidgetKit
 
 @main
 struct RhythmXWidgetBundle: WidgetBundle {
-    var body: some Widget { PhaseWidget() }
+    var body: some Widget {
+        PhaseWidget()
+        WeekStripWidget()
+        QuickLogWidget()
+    }
 }
 
 struct PhaseWidget: Widget {

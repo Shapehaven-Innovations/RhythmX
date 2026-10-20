@@ -215,13 +215,23 @@ struct InsightsViewModel {
         "Dietary": DS.Color.phase3Default, "Exercise": DS.Color.phase2Default,
         "Medication": DS.Color.waveMid, "Cervical Mucus": DS.Color.waveBack,
         "Basal Temp": DS.Color.moon,
-        "Other": DS.Color.secondaryText.opacity(0.4)
+        "Other": DS.Color.secondaryText.opacity(0.4),
+        "Planning": DS.Color.phase3Default.opacity(0.7),
+        "Menopause": DS.Color.phase1Default.opacity(0.7)
     ]
 
-    static let categoryNames = ["Symptom", "Mood", "Dietary", "Exercise", "Medication", "Cervical Mucus", "Basal Temp", "Other"]
+    /// The menstrual categories the legend always lists.
+    static let cycleCategoryNames = ["Symptom", "Mood", "Dietary", "Exercise", "Medication", "Cervical Mucus", "Basal Temp", "Other"]
+    /// Every category, in legend order; also the chart's color scale domain.
+    static let categoryNames = cycleCategoryNames + ["Planning", "Menopause"]
 
+    /// The menstrual categories always; Planning and Menopause only once a tag of theirs is in the data,
+    /// so Cycle-mode Insights look as they did before the modes existed.
     var categoryLegendItems: [(name: String, color: Color)] {
-        Self.categoryNames.map { ($0, Self.categoryColors[$0] ?? .gray) }
+        let present = Set(stackedTagData.map(\.categoryName))
+        return Self.categoryNames
+            .filter { Self.cycleCategoryNames.contains($0) || present.contains($0) }
+            .map { ($0, Self.categoryColors[$0] ?? .gray) }
     }
 
     func mucusLevel(_ value: String) -> Int {

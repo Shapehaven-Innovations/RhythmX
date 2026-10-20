@@ -6,17 +6,20 @@ struct EventsCalendarView: View {
     @EnvironmentObject var eventStore: EventStore
     @EnvironmentObject var archivedDataStore: ArchivedDataStore
     @EnvironmentObject var appSettings: AppSettings
+    @EnvironmentObject var purchaseStore: PurchaseStore
+    @EnvironmentObject var calendarSync: CalendarSync
     @State private var dateSelected: Date?
     @State private var showNotificationPrompt = false
+    @State private var showExport = false
 
     private var daysUntilPrediction: Int? {
-        CyclePredictionService.daysUntilPrediction(from: archivedDataStore.archivedBlocks)
+        CyclePredictionService.daysUntilPrediction(from: archivedDataStore.cycleBlocks)
     }
 
     private var stats: InsightsViewModel.CycleStats {
         InsightsViewModel(
-            events: eventStore.events,
-            archivedBlocks: archivedDataStore.archivedBlocks,
+            events: eventStore.cycleEvents,
+            archivedBlocks: archivedDataStore.cycleBlocks,
             appSettings: appSettings
         ).cycleStats()
     }
@@ -42,6 +45,29 @@ struct EventsCalendarView: View {
         }
     }
 
+    private var syncedChip: some View {
+        HStack(spacing: DS.Spacing.sm) {
+            Image(systemName: "calendar.badge.checkmark")
+                .font(DS.Font.caption.weight(.medium))
+                .foregroundColor(DS.Color.accent)
+                .accessibilityHidden(true)
+            Text("Synced to Apple Calendar")
+                .font(DS.Font.caption.weight(.medium))
+                .foregroundColor(DS.Color.primaryText)
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, DS.Spacing.sm)
+        .padding(.horizontal, DS.Spacing.md)
+        .background(DS.Color.cardBackground)
+        .cornerRadius(DS.Radius.chip)
+        .overlay(
+            RoundedRectangle(cornerRadius: DS.Radius.chip)
+                .stroke(DS.Color.accent.opacity(0.3), lineWidth: 1)
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("Your cycle appears in the RhythmX calendar. Change this in Settings.")
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -55,18 +81,35 @@ struct EventsCalendarView: View {
                     if let selected = dateSelected {
                         DayPanelView(date: selected)
                     }
+                    // The only other 2.0 change on this tab: a chip while Apple Calendar sync (Plus) is on and
+                    // working. Without calendar access the chip is hidden and the Settings card explains why.
+                    if appSettings.calendarSyncOn && purchaseStore.isPlus && calendarSync.hasAccess && !calendarSync.accessDenied {
+                        syncedChip
+                    }
                 }
                 .padding(DS.Spacing.md)
                 .padding(.bottom, DS.Spacing.xl)
             }
-            .background(DS.Color.pageBackground.ignoresSafeArea())
+            .themedPage()
             .navigationTitle("Calendar")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { showExport = true } label: {
+                        Image(systemName: "printer").frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
+                    }
+                    .accessibilityLabel("Print calendar")
+                    .accessibilityHint("Opens the printable calendar preview")
+                }
+            }
+            .sheet(isPresented: $showExport) {
+                ExportView(kind: .calendar)
+            }
             .alert("Cycle Reminders", isPresented: $showNotificationPrompt) {
                 Button("Enable") {
                     NotificationScheduler.requestPermissionIfNeeded { granted in
                         if granted {
                             UserDefaults.standard.set(true, forKey: "notificationsEnabled")
-                            if let predicted = CyclePredictionService.predictedStartDate(from: archivedDataStore.archivedBlocks) {
+                            if let predicted = CyclePredictionService.predictedStartDate(from: archivedDataStore.cycleBlocks) {
                                 NotificationScheduler.scheduleCycleReminders(
                                     for: predicted, dayBefore: true, dayOf: true
                                 )
@@ -91,4 +134,6 @@ struct EventsCalendarView: View {
         .environmentObject(ArchivedDataStore())
         .environmentObject(AppSettings())
         .environmentObject(FertileStore())
+        .environmentObject(PurchaseStore(listensForUpdates: false))
+        .environmentObject(CalendarSync())
 }

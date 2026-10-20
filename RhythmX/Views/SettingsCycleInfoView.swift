@@ -23,7 +23,7 @@ struct SettingsCycleInfoView: View {
                     currentCycleCard
 
                     VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-                        Text("Start a new cycle").font(DS.Font.sectionHeader).foregroundColor(DS.Color.primaryText)
+                        Text(isMenopause ? "Start a fresh stretch" : "Start a new cycle").font(DS.Font.sectionHeader).foregroundColor(DS.Color.primaryText)
                         DatePicker("First day", selection: $selectedStartDate, displayedComponents: .date)
                         Stepper(value: $selectedCycleLength, in: 20...40) {
                             Text("Length: \(selectedCycleLength) days")
@@ -31,7 +31,9 @@ struct SettingsCycleInfoView: View {
                         PrimaryButton(title: "Generate cycle") {
                             if eventStore.events.isEmpty { generateEventsAndAlert() } else { showArchivePrompt = true }
                         }
-                        Text("If you already have events, you'll be asked whether to archive them first.")
+                        Text(isMenopause
+                             ? "If you already have entries, you'll be asked whether to archive the older ones first."
+                             : "If you already have events, you'll be asked whether to archive them first.")
                             .font(DS.Font.micro).foregroundColor(DS.Color.secondaryText)
                     }
                     .cardStyle()
@@ -49,7 +51,7 @@ struct SettingsCycleInfoView: View {
                 }
                 .padding(DS.Spacing.md)
             }
-            .background(DS.Color.pageBackground.ignoresSafeArea())
+            .themedPage()
             .navigationTitle("Cycles")
             .alert("Cycle Events Generated", isPresented: $showCycleGeneratedAlert) {
                 Button("OK") {
@@ -61,7 +63,7 @@ struct SettingsCycleInfoView: View {
                     eventStore.reloadCalendarIcons()
                 }
             }
-            .alert("Archive your current data?", isPresented: $showArchivePrompt) {
+            .alert(isMenopause ? "Archive your older entries?" : "Archive your current data?", isPresented: $showArchivePrompt) {
                 Button("Yes") {
                     archiveCurrentData()
                     generateEventsAndAlert()
@@ -70,13 +72,24 @@ struct SettingsCycleInfoView: View {
                     generateEventsAndAlert()
                 }
             } message: {
-                Text("Would you like to archive your existing events before generating a new cycle?")
+                Text(isMenopause
+                     ? "Would you like to archive entries older than \(ArchivedDataStore.menopauseArchiveAgeDays) days before starting a fresh stretch? The last week stays."
+                     : "Would you like to archive your existing events before generating a new cycle?")
             }
         }
     }
 
+    private var mode: TrackingMode { appSettings.trackingMode }
+    private var isMenopause: Bool { mode == .menopause }
+
     private var stats: InsightsViewModel.CycleStats {
-        InsightsViewModel(events: eventStore.events, archivedBlocks: archivedDataStore.archivedBlocks, appSettings: appSettings).cycleStats()
+        InsightsViewModel(events: eventStore.cycleEvents, archivedBlocks: archivedDataStore.cycleBlocks, appSettings: appSettings).cycleStats()
+    }
+
+    /// Menopause mode: whole months since the last period, in place of the next period date.
+    private var monthsSinceLastPeriod: Int? {
+        let insights = MenopauseInsights.make(events: eventStore.events, today: Date())
+        return insights.lastPeriod == nil ? nil : insights.monthsSinceLastPeriod
     }
 
     private var currentCycleCard: some View {
@@ -86,7 +99,12 @@ struct SettingsCycleInfoView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(stats.currentCycleDay.map { "Day \($0) of \(stats.averageCycleLength ?? 28)" } ?? "No active cycle")
                     .font(DS.Font.sectionHeader).foregroundColor(DS.Color.primaryText)
-                if let next = stats.nextPeriodEstimate {
+                if isMenopause {
+                    if let months = monthsSinceLastPeriod {
+                        Text(months == 1 ? "1 month since last period" : "\(months) months since last period")
+                            .font(DS.Font.caption).foregroundColor(DS.Color.secondaryText)
+                    }
+                } else if let next = stats.nextPeriodEstimate {
                     Text(next.startOfDay < Date().startOfDay ? "Next period overdue" : "Next period \(next.formatted(.dateTime.month(.abbreviated).day()))")
                         .font(DS.Font.caption).foregroundColor(DS.Color.secondaryText)
                 }
@@ -106,23 +124,9 @@ struct SettingsCycleInfoView: View {
         }
         .padding(.vertical, DS.Spacing.sm)
     }
+    /// Archives under the current mode. The grouping lives in `ArchivedDataStore.archiveCurrent`.
     private func archiveCurrentData() {
-        guard !eventStore.events.isEmpty else { return }
-
-        let groupedPhases = Dictionary(grouping: eventStore.events) { $0.eventType }
-            .sorted { $0.key.rawValue < $1.key.rawValue }
-            .map { (key, events) in
-                ArchivedDataBlock.PhaseEvents(eventType: key, events: events)
-            }
-
-        let newBlock = ArchivedDataBlock(
-            id: UUID(),
-            date: Date(),
-            groupedEvents: groupedPhases
-        )
-
-        archivedDataStore.appendArchivedBlock(newBlock)
-        eventStore.clearAllEvents()
+        guard archivedDataStore.archiveCurrent(from: eventStore, mode: mode) != nil else { return }
         showArchivedAlert = true
     }
 

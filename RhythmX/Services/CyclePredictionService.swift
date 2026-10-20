@@ -5,6 +5,8 @@ import Foundation
 struct CyclePredictionService {
 
     static func predictedStartDate(from archives: [ArchivedDataBlock]) -> Date? {
+        // Menopause blocks have no cycle to predict from, whatever the caller passed in.
+        let archives = archives.filter { $0.effectiveMode != .menopause }
         guard !archives.isEmpty else { return nil }
 
         let lengths: [Int] = archives.compactMap { block -> Int? in
