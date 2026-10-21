@@ -224,6 +224,12 @@ final class DoctorReportTests: XCTestCase {
 
     // MARK: - Page
 
+    func testReportHeaderCarriesTheAppIconAsAnImage() throws {
+        let data = DoctorReportPDFRenderer().render(report(), paper: .a4, name: nil, birthDate: nil)
+        XCTAssertNotNil(data.range(of: Data("/Subtype /Image".utf8)), "the header draws the app icon image")
+        XCTAssertEqual(PDFDocument(data: data)?.pageCount, 1)
+    }
+
     func testRendersOnePageWithEmptyStateMessageWhenSparse() throws {
         let r = report(blocks: [block(start: date(2026, 9, 7), length: 28)])
         XCTAssertFalse(r.hasEnoughData)

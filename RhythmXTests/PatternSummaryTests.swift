@@ -125,6 +125,43 @@ final class PatternSummaryTests: XCTestCase {
         }
     }
 
+    // MARK: - Checking what the model wrote
+
+    private let checkFindings = [
+        PatternFinding(id: "a", sentence: "Cramps came up on days 1 to 3, in your menstrual phase",
+                       evidence: "4 of your last 4 cycles", tag: "Symptom:Cramps")
+    ]
+
+    private func provider(reply: String) -> PatternSummaryProvider {
+        PatternSummaryProvider(availability: { true }, generate: { _, _ in reply })
+    }
+
+    func testAcceptableModelTextIsShown() async throws {
+        let reply = "Cramps came up early in your cycle, on days 1 to 3, in 4 of your last 4 cycles."
+        let text = try await provider(reply: reply).summarize(checkFindings, question: nil)
+        XCTAssertEqual(text, reply)
+    }
+
+    func testModelTextThatBreaksTheRulesFallsBackToTheFindings() async throws {
+        let fallback = PatternSummaryProvider.plainText(for: checkFindings)
+        XCTAssertEqual(fallback, "Cramps came up on days 1 to 3, in your menstrual phase, in 4 of your last 4 cycles.")
+        for bad in ["Cramps came up \u{2014} often.", "Cramps came up a lot \u{1F319}", "Ask your doctor about Cramps.",
+                    "Cramps came up on 7 days.", "Cramps came up three times.", "Headache came up too.",
+                    "She logged Cramps.", String(repeating: "Cramps came up. ", count: 40)] {
+            let text = try await provider(reply: bad).summarize(checkFindings, question: nil)
+            XCTAssertEqual(text, fallback, bad)
+        }
+    }
+
+    func testInstructionsAreGenderNeutral() {
+        let words = PatternSummaryProvider.instructions.lowercased()
+            .components(separatedBy: CharacterSet.letters.inverted)
+        for word in ["her", "she", "hers", "herself", "woman", "women"] {
+            XCTAssertFalse(words.contains(word), word)
+        }
+        XCTAssertTrue(PatternSummaryProvider.instructions.contains("the person's own health log"))
+    }
+
     func testDefaultSummarizeHasNoQuestion() async throws {
         let fake = FakeSummarizer(isAvailable: true)
         _ = try await fake.summarize([PatternFinding(id: "a", sentence: "s", evidence: "e", tag: "t")])

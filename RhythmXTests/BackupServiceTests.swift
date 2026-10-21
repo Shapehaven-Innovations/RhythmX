@@ -8,10 +8,12 @@ final class BackupServiceTests: XCTestCase {
 
     /// Keys AppSettings writes; saved and restored around each test so real values survive.
     private let groupSettingKeys = ["phaseColor1", "phaseColor2", "phaseColor3", "phaseColor4",
-                                    "trackingMode", "defaultModeOnLaunch"]
+                                    "trackingMode", "defaultModeOnLaunch",
+                                    "dailyInsightsOn", "dailyInsightsHour", "dailyInsightsMinute", "dailyInsightsDiscreet",
+                                    "themeID"]
     private let standardSettingKeys = ["notificationsEnabled", "notifyDayBefore", "notifyDayOf",
                                        "fertileStartOn", "fertileOvulationOn",
-                                       "loggingReminders", "dailyCheckIn", "weeklyCheckIn"]
+                                       "weeklyCheckIn"]
     private var savedGroup: [String: Any] = [:]
     private var savedStandard: [String: Any] = [:]
 
@@ -66,14 +68,17 @@ final class BackupServiceTests: XCTestCase {
             trackingMode: "cycle",
             defaultModeOnLaunch: "last",
             themeID: "default",
-            reminders: [],
-            dailyCheckIn: nil,
-            weeklyCheckIn: nil
+            weeklyCheckIn: nil,
+            dailyInsightsOn: true,
+            dailyInsightsHour: 7,
+            dailyInsightsMinute: 45,
+            dailyInsightsDiscreet: true
         )
     }
 
     private func seedExisting() {
-        settings.phaseColor1 = "#AAAAAA"
+        // A custom color left behind by 1.9.x; restores never read or write it.
+        AppGroup.defaults.set("#AAAAAA", forKey: "phaseColor1")
         settings.notificationsEnabled = false
         settings.notifyDayBefore = true
         settings.notifyDayOf = true
@@ -193,7 +198,7 @@ final class BackupServiceTests: XCTestCase {
         _ = BackupService.restore(incoming, mode: .merge, events: events, archived: archived, settings: settings)
 
         XCTAssertEqual(settings.settingsSnapshot(), before)
-        XCTAssertEqual(settings.phaseColor1, "#AAAAAA")
+        XCTAssertEqual(AppGroup.defaults.string(forKey: "phaseColor1"), "#AAAAAA")
         XCTAssertFalse(settings.notificationsEnabled)
     }
 
@@ -217,14 +222,18 @@ final class BackupServiceTests: XCTestCase {
             settings: incomingSettings
         )
 
+        let themeBefore = settings.themeID
         let result = BackupService.restore(incoming, mode: .replace, events: events, archived: archived, settings: settings)
 
         XCTAssertEqual(result, RestoreResult(eventsAdded: 1, blocksAdded: 2))
         XCTAssertEqual(events.events.map(\.id), ["r1"])
         XCTAssertEqual(events.events.first?.mode, .planning)
         XCTAssertEqual(archived.archivedBlocks.map(\.id.uuidString), [idC, idB])
-        XCTAssertEqual(settings.settingsSnapshot(), incomingSettings)
-        XCTAssertEqual(settings.phaseColor1, "#0F0F0F")
+        var expectedSettings = incomingSettings
+        expectedSettings.phaseColors = AppSettings.phaseColorHexes
+        expectedSettings.themeID = themeBefore   // "default" is not a theme, so the phone keeps its own
+        XCTAssertEqual(settings.settingsSnapshot(), expectedSettings, "everything but the phase colors is restored")
+        XCTAssertEqual(AppGroup.defaults.string(forKey: "phaseColor1"), "#AAAAAA", "phase colors in the file are ignored")
         XCTAssertTrue(settings.notificationsEnabled)
         XCTAssertFalse(settings.notifyDayBefore)
 
@@ -255,7 +264,7 @@ final class BackupServiceTests: XCTestCase {
         XCTAssertEqual(reloadedEvents.events.map(\.id), ["p1"])
         XCTAssertEqual(reloadedEvents.events.first?.mode, .menopause)
         XCTAssertEqual(reloadedArchive.archivedBlocks.map(\.id.uuidString), [idC])
-        XCTAssertEqual(AppSettings().phaseColor1, "#ABCDEF")
+        XCTAssertTrue(AppSettings().dailyInsightsOn, "restored settings are persisted")
 
         let more = BackupPayload(
             events: [Event(id: "p2", eventType: .menstrual, date: base.addingTimeInterval(9 * day), note: "")],
@@ -294,6 +303,59 @@ final class BackupServiceTests: XCTestCase {
         XCTAssertEqual(AppGroup.defaults.data(forKey: PersistenceKeys.events), persistedEvents)
         XCTAssertEqual(AppGroup.defaults.data(forKey: PersistenceKeys.archivedData), persistedBlocks)
         XCTAssertEqual(settings.settingsSnapshot(), settingsBefore)
+    }
+
+    // MARK: - Daily insights needs permission
+
+    func testRestoredDailyInsightsTurnsOffWithoutNotificationPermission() async {
+        settings.dailyInsightsOn = true
+        let off = await BackupService.checkDailyInsightsAccess(settings: settings, isAuthorized: { false })
+        XCTAssertTrue(off, "the switch cannot fire, so it goes back off")
+        XCTAssertFalse(settings.dailyInsightsOn)
+
+        settings.dailyInsightsOn = true
+        let kept = await BackupService.checkDailyInsightsAccess(settings: settings, isAuthorized: { true })
+        XCTAssertFalse(kept)
+        XCTAssertTrue(settings.dailyInsightsOn)
+
+        settings.dailyInsightsOn = false
+        var asked = false
+        let none = await BackupService.checkDailyInsightsAccess(settings: settings, isAuthorized: { asked = true; return false })
+        XCTAssertFalse(none)
+        XCTAssertFalse(asked, "nothing to check while it is off")
+    }
+
+    func testRestoreResultSaysWhenDailyInsightsWasTurnedOff() {
+        let result = RestoreResult(eventsAdded: 1, blocksAdded: 2)
+        let plain = BackupViewModel.doneMessage(mode: .replace, result: result, dailyInsightsTurnedOff: false)
+        XCTAssertFalse(plain.contains("Daily insights"))
+        let off = BackupViewModel.doneMessage(mode: .replace, result: result, dailyInsightsTurnedOff: true)
+        XCTAssertTrue(off.hasPrefix(plain))
+        XCTAssertTrue(off.contains(BackupService.dailyInsightsOffNote))
+        XCTAssertFalse(off.contains("\u{2014}"))
+    }
+
+    // MARK: - Theme
+
+    func testThemeRoundTripsThroughABackup() {
+        settings.themeID = AppTheme.eclipse.id
+        XCTAssertEqual(settings.settingsSnapshot().themeID, AppTheme.eclipse.id)
+
+        settings.themeID = AppTheme.blush.id
+        var file = backupSettings()
+        file.themeID = AppTheme.harvestMoon.id
+        settings.apply(file)
+        XCTAssertEqual(settings.themeID, AppTheme.harvestMoon.id, "a Plus theme is stored; Plus still gates how it shows")
+    }
+
+    func testOldOrUnknownThemeLeavesTheThemeAlone() {
+        settings.themeID = AppTheme.blueMoon.id
+        settings.apply(backupSettings())           // "default", as files before 2.0 wrote it
+        XCTAssertEqual(settings.themeID, AppTheme.blueMoon.id)
+        var odd = backupSettings()
+        odd.themeID = "neon"
+        settings.apply(odd)
+        XCTAssertEqual(settings.themeID, AppTheme.blueMoon.id)
     }
 
     // MARK: - Preview

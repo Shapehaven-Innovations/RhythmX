@@ -1,7 +1,7 @@
 //  LegalLinks.swift
 //
-//  The Terms of Use and Privacy Policy links shown next to every subscription purchase button and in
-//  Settings. Terms is Apple's standard EULA; Privacy is the Shape Haven Innovations policy. App Store
+//  The Terms of Use and Privacy Policy links shown next to every subscription purchase button (paywall
+//  only; Settings does not carry them). Terms is Apple's standard EULA; Privacy is the Shape Haven Innovations policy. App Store
 //  Connect carries the same two URLs (Privacy Policy URL field; EULA left on the standard Apple EULA).
 
 import SwiftUI

@@ -15,6 +15,7 @@ struct SettingsView: View {
     @State private var showManageSubscriptions = false
     @State private var healthDenied = false
     @State private var calendarDenied = false
+    @State private var showWelcome = false
 
     var body: some View {
         NavigationStack {
@@ -23,7 +24,7 @@ struct SettingsView: View {
                     privacyCard
                     plusCard
                     appearanceCard
-                    phaseColorsCard
+                    greetingCard
                     notificationsCard
                     healthCard
                     calendarCard
@@ -36,8 +37,15 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.large)
         }
-        .onChange(of: appSettings.colorSignature) { _, _ in AppGroup.reloadWidgets() }
         .manageSubscriptionsSheet(isPresented: $showManageSubscriptions)
+        // Replay welcome: the onboarding pages again. Nothing is reset; finishing only closes it.
+        .fullScreenCover(isPresented: $showWelcome) {
+            OnboardingView(isReplay: true) { showWelcome = false }
+                .environmentObject(myEvents)
+                .environmentObject(archivedDataStore)
+                .environmentObject(appSettings)
+                .environmentObject(purchaseStore)
+        }
     }
 
     // MARK: - Plus
@@ -52,6 +60,7 @@ struct SettingsView: View {
                 if purchaseStore.isPlus {
                     Text("Active").font(DS.Font.caption.weight(.semibold)).foregroundColor(DS.Color.accent)
                 }
+                InfoButton(topic: InfoCopy.plus)
             }
             Text(purchaseStore.isPlus
                  ? PaywallCopy.alreadyPlus
@@ -72,7 +81,6 @@ struct SettingsView: View {
             Text(PaywallCopy.dataPromise)
                 .font(DS.Font.micro).foregroundColor(DS.Color.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
-            LegalLinksRow(font: DS.Font.caption, alignment: .leading)
         }
         .padding(DS.Spacing.md)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -91,6 +99,32 @@ struct SettingsView: View {
                 )
         )
         .shadow(color: Color.black.opacity(0.06), radius: 6, x: 0, y: 2)
+    }
+
+    // MARK: - Greeting
+    /// How Today greets: "Good morning" and so on, the same with a name, or no greeting.
+    private var greetingCard: some View {
+        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+            cardHeader("Greeting", topic: InfoCopy.greeting)
+            Picker("Greeting", selection: $appSettings.greetingStyle) {
+                Text("Greeting").tag(GreetingStyle.greeting)
+                Text("Name").tag(GreetingStyle.name)
+                Text("Off").tag(GreetingStyle.off)
+            }
+            .pickerStyle(.segmented)
+            if appSettings.greetingStyle == .name {
+                TextField("Your name", text: $appSettings.greetingName)
+                    .textContentType(.givenName)
+                    .autocorrectionDisabled()
+                    .textFieldStyle(.roundedBorder)
+                    .frame(minHeight: 44)
+            }
+            Text(GreetingProvider.text(now: Date(), style: appSettings.greetingStyle, name: appSettings.greetingName)
+                 .map { "Today shows \"\($0)\"." } ?? "Today shows no greeting.")
+                .font(DS.Font.caption).foregroundColor(DS.Color.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .cardStyle()
     }
 
     // MARK: - Appearance
@@ -224,62 +258,9 @@ struct SettingsView: View {
         .accessibilityElement(children: .combine)
     }
 
-    // MARK: - Phase Colors
-    private var phaseColorsCard: some View {
-        VStack(alignment: .leading, spacing: DS.Spacing.md) {
-            Text("Phase colors").font(DS.Font.sectionHeader).foregroundColor(DS.Color.primaryText)
-            if dynamicTypeSize.isAccessibilitySize {
-                VStack(spacing: DS.Spacing.md) {
-                    HStack(alignment: .top) {
-                        phaseColorMoon(.menstrual,  "Menstrual",  $appSettings.phaseColor1)
-                        phaseColorMoon(.follicular, "Follicular", $appSettings.phaseColor2)
-                    }
-                    HStack(alignment: .top) {
-                        phaseColorMoon(.ovulation,  "Ovulation",  $appSettings.phaseColor3)
-                        phaseColorMoon(.luteal,     "Luteal",     $appSettings.phaseColor4)
-                    }
-                }
-            } else {
-                HStack(alignment: .top) {
-                    phaseColorMoon(.menstrual,  "Menstrual",  $appSettings.phaseColor1)
-                    phaseColorMoon(.follicular, "Follicular", $appSettings.phaseColor2)
-                    phaseColorMoon(.ovulation,  "Ovulation",  $appSettings.phaseColor3)
-                    phaseColorMoon(.luteal,     "Luteal",     $appSettings.phaseColor4)
-                }
-            }
-            Button("Reset to Defaults") { appSettings.resetToDefaults() }
-                .font(DS.Font.caption)
-                .foregroundColor(DS.Color.accent)
-        }
-        .cardStyle()
-    }
-
-    private func phaseColorMoon(_ phase: Event.EventType, _ label: String, _ hex: Binding<String>) -> some View {
-        VStack(spacing: DS.Spacing.xs) {
-            ZStack {
-                MoonPhaseView(phase: phase.moonPhase, color: appSettings.phaseColor(for: phase), size: 36)
-                    .accessibilityHidden(true)
-                ColorPicker("\(label) color", selection: Binding(
-                    get: { Color(hex: hex.wrappedValue) ?? phase.defaultPhaseColor },
-                    set: { hex.wrappedValue = $0.hexString }
-                ), supportsOpacity: false)
-                .labelsHidden()
-                .opacity(0.02)
-                .frame(width: 44, height: 44)
-                .accessibilityLabel("\(label) color")
-            }
-            .frame(minWidth: 44, minHeight: 44)
-            .contentShape(Rectangle())
-            Text(label).font(DS.Font.micro).foregroundColor(DS.Color.secondaryText)
-                .lineLimit(1).minimumScaleFactor(0.7)
-                .accessibilityHidden(true)
-        }
-        .frame(maxWidth: .infinity)
-    }
-
     // MARK: - Notifications
-    /// The only place with notification controls: Period, Fertile window and Check-ins live in
-    /// NotificationsSettingsView.
+    /// The only place with notification controls: Period, Fertile window, Daily insights and Weekly review live
+    /// in NotificationsSettingsView.
     private var notificationsCard: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Notifications").font(DS.Font.sectionHeader).foregroundColor(DS.Color.primaryText)
@@ -287,12 +268,20 @@ struct SettingsView: View {
             NavigationLink { NotificationsSettingsView() } label: {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Period, fertile window and check-ins")
+                        Text("Period, fertile window, daily insights and weekly review")
                             .font(DS.Font.label).foregroundColor(DS.Color.primaryText)
-                        Text(notificationsSummary)
+                        Text(Self.notificationsSummary(
+                            period: appSettings.notificationsEnabled,
+                            fertile: appSettings.fertileStartOn || appSettings.fertileOvulationOn,
+                            dailyInsights: appSettings.dailyInsightsOn,
+                            weeklyReview: appSettings.weeklyCheckIn?.isOn == true))
                             .font(DS.Font.caption).foregroundColor(DS.Color.secondaryText)
                     }
+                    .multilineTextAlignment(.leading)
                     Spacer()
+                    Text("\(NotificationsPage.onCount(period: appSettings.notificationsEnabled, fertile: appSettings.fertileStartOn || appSettings.fertileOvulationOn, dailyInsights: appSettings.dailyInsightsOn, weeklyReview: appSettings.weeklyCheckIn?.isOn == true)) on")
+                        .font(DS.Font.caption).foregroundColor(DS.Color.secondaryText)
+                        .accessibilityHidden(true)
                     Image(systemName: "chevron.right").font(DS.Font.caption).foregroundColor(DS.Color.tertiaryText)
                 }
                 .padding(.vertical, DS.Spacing.sm)
@@ -301,11 +290,9 @@ struct SettingsView: View {
         .cardStyle()
     }
 
-    private var notificationsSummary: String {
-        let fertile = appSettings.fertileStartOn || appSettings.fertileOvulationOn
-        let checkIns = appSettings.dailyCheckIn?.isOn == true || appSettings.weeklyCheckIn?.isOn == true
+    static func notificationsSummary(period: Bool, fertile: Bool, dailyInsights: Bool, weeklyReview: Bool) -> String {
         func state(_ on: Bool) -> String { on ? "on" : "off" }
-        return "Period \(state(appSettings.notificationsEnabled)). Fertile window \(state(fertile)). Check-ins \(state(checkIns))."
+        return "Period \(state(period)). Fertile window \(state(fertile)). Daily insights \(state(dailyInsights)). Weekly review \(state(weeklyReview))."
     }
 
     // MARK: - Apple Health
@@ -313,12 +300,12 @@ struct SettingsView: View {
     /// that moment and nothing else; a prompt that cannot be shown turns the switch back off.
     private var healthCard: some View {
         VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-            Text("Apple Health").font(DS.Font.sectionHeader).foregroundColor(DS.Color.primaryText)
+            cardHeader("Apple Health", topic: InfoCopy.appleHealth)
             if healthSync.isAvailable {
                 healthToggle("Write period days", isOn: $appSettings.healthWritePeriod, write: true)
                 healthToggle("Read temperature", isOn: $appSettings.healthReadTemperature, readTemperature: true)
                 healthToggle("Read sleep", isOn: $appSettings.healthReadSleep, readSleep: true)
-                Text("Period days are written to Health as menstrual flow, once per day. If you remove a period day here, the entry RhythmX wrote is removed from Health too. Turning off Write period days stops new writes and keeps what is already in Health. Temperature and sleep from Health show in Insights and are offered in the tag form; they are not added to your events. Nothing leaves this device.")
+                Text(Self.healthSummary)
                     .font(DS.Font.caption).foregroundColor(DS.Color.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
                 if healthDenied {
@@ -371,6 +358,7 @@ struct SettingsView: View {
                         .padding(.horizontal, 6).padding(.vertical, 1)
                         .background(Capsule().fill(DS.Color.accent.opacity(0.14)))
                 }
+                InfoButton(topic: InfoCopy.appleCalendar)
             }
             Toggle("Sync to Apple Calendar", isOn: Binding(get: { active }, set: { calendarSyncSwitched($0) }))
                 .font(DS.Font.label).foregroundColor(DS.Color.primaryText)
@@ -398,9 +386,14 @@ struct SettingsView: View {
                     .font(DS.Font.caption).foregroundColor(DS.Color.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            Text("One way, into a calendar named RhythmX that iCloud carries to your other devices. Turning this off removes every event RhythmX added. RhythmX asks for full calendar access because Apple Calendar only lets an app create its own calendar and update or remove its events at that level; RhythmX reads and writes only the RhythmX calendar. Nothing leaves this device.")
+            Text(Self.calendarSummary)
                 .font(DS.Font.caption).foregroundColor(DS.Color.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
+            if active, let note = calendarSync.offDeviceNote {
+                Label(note, systemImage: "icloud")
+                    .font(DS.Font.caption).foregroundColor(DS.Color.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             if calendarDenied {
                 Label("Calendar access was not allowed. You can change it in iOS Settings under Privacy, Calendars.", systemImage: "exclamationmark.triangle")
                     .font(DS.Font.caption).foregroundColor(.orange)
@@ -477,11 +470,30 @@ struct SettingsView: View {
     // MARK: - Your data
     private var yourDataCard: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Your data").font(DS.Font.sectionHeader).foregroundColor(DS.Color.primaryText)
+            cardHeader("Your data", topic: InfoCopy.backup)
                 .padding(.bottom, DS.Spacing.xs)
             NavigationLink { BackupView() } label: { linkRow("Backup and restore") }
+            Text(Self.backupSummary)
+                .font(DS.Font.caption).foregroundColor(DS.Color.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .cardStyle()
+    }
+
+    // MARK: - Card parts
+
+    /// One-line summaries; the full text is behind each card's info circle (`InfoCopy`).
+    static let healthSummary = "Period days go to Health; temperature and sleep come back. Nothing leaves this device."
+    static let calendarSummary = "One way, into a calendar named RhythmX on this iPhone."
+    static let backupSummary = "One file you save where you like. RhythmX never uploads it."
+
+    private func cardHeader(_ title: String, topic: InfoTopic) -> some View {
+        HStack(alignment: .center) {
+            Text(title).font(DS.Font.sectionHeader).foregroundColor(DS.Color.primaryText)
+                .accessibilityAddTraits(.isHeader)
+            Spacer()
+            InfoButton(topic: topic)
+        }
     }
 
     // MARK: - Links
@@ -489,7 +501,8 @@ struct SettingsView: View {
         VStack(spacing: 0) {
             NavigationLink { ShareRhythmView() } label: { linkRow("Share RhythmX") }
             Divider()
-            NavigationLink { GettingStartedView() } label: { linkRow("How RhythmX works") }
+            Button { showWelcome = true } label: { linkRow("Replay welcome") }
+                .accessibilityHint("Shows the welcome pages again. Your entries and settings stay as they are.")
             Divider()
             HStack {
                 Text("Version").font(DS.Font.label).foregroundColor(DS.Color.primaryText)

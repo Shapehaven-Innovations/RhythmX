@@ -11,53 +11,44 @@ struct InsightsView: View {
     @State private var selectedPhase: Event.EventType? = nil
     @State private var showReport = false
 
+    /// The Insights section of Today: the per-mode charts and cards and the Doctor Report row. Today hosts it in
+    /// its own scroll view under an "Insights" heading; the mode switcher sits at the top of Today.
     var body: some View {
         let vm = InsightsViewModel(
             events: myEvents.cycleEvents,
             archivedBlocks: archivedDataStore.cycleBlocks,
             appSettings: appSettings
         )
-        return NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    ModeSwitcher(mode: $appSettings.trackingMode)
-                        .padding(.horizontal, DS.Spacing.md)
-                        .padding(.top, DS.Spacing.sm)
-
-                    switch appSettings.trackingMode {
-                    case .cycle:
-                        if vm.events.isEmpty && vm.archivedBlocks.isEmpty {
-                            emptyState.frame(maxWidth: .infinity)
-                        } else {
-                            VStack(alignment: .leading, spacing: DS.Spacing.md) {
-                                InsightsHeroCard(stats: vm.cycleStats())
-                                tagFrequencyChart(vm).cardStyle()
-                                tagsOverMonthChart(vm).cardStyle()
-                                tagCategoryDonut(vm).cardStyle()
-                                fertilityWindowChart(vm).cardStyle()
-                                cervicalMucusChart(vm).cardStyle()
-                            }
-                            .padding(DS.Spacing.md)
-                        }
-                    case .planning:
-                        PlanningInsightsView()
-                            .padding(DS.Spacing.md)
-                    case .menopause:
-                        MenopauseInsightsView()
-                            .padding(DS.Spacing.md)
+        VStack(alignment: .leading, spacing: 0) {
+            switch appSettings.trackingMode {
+            case .cycle:
+                if vm.events.isEmpty && vm.archivedBlocks.isEmpty {
+                    emptyState.frame(maxWidth: .infinity)
+                } else {
+                    VStack(alignment: .leading, spacing: DS.Spacing.md) {
+                        InsightsHeroCard(stats: vm.cycleStats())
+                        tagFrequencyChart(vm).cardStyle()
+                        tagsOverMonthChart(vm).cardStyle()
+                        tagCategoryDonut(vm).cardStyle()
+                        fertilityWindowChart(vm).cardStyle()
+                        cervicalMucusChart(vm).cardStyle()
                     }
-
-                    doctorReportRow
-                        .padding(.horizontal, DS.Spacing.md)
-                        .padding(.bottom, DS.Spacing.lg)
+                    .padding(DS.Spacing.md)
                 }
+            case .planning:
+                PlanningInsightsView()
+                    .padding(DS.Spacing.md)
+            case .menopause:
+                MenopauseInsightsView()
+                    .padding(DS.Spacing.md)
             }
-            .themedPage()
-            .navigationTitle("Insights")
-            .navigationBarTitleDisplayMode(.large)
-            .sheet(isPresented: $showReport) {
-                ExportView(kind: .report)
-            }
+
+            doctorReportRow
+                .padding(.horizontal, DS.Spacing.md)
+                .padding(.bottom, DS.Spacing.lg)
+        }
+        .sheet(isPresented: $showReport) {
+            ExportView(kind: .report)
         }
     }
 
@@ -539,7 +530,7 @@ struct InsightsView: View {
 }
 
 #Preview {
-    InsightsView()
+    ScrollView { InsightsView() }
         .environmentObject(ArchivedDataStore())
         .environmentObject(EventStore(preview: true))
         .environmentObject(FertileStore())

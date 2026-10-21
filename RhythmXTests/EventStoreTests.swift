@@ -117,22 +117,6 @@ final class EventStoreTests: XCTestCase {
         XCTAssertEqual(types, [.menstrual, .follicular, .ovulation, .luteal])
     }
 
-    // Onboarding's "Start tracking" must not wipe events a restore brought in.
-    func testInitialGenerationSkipsWhenEventsExist() {
-        let restored = Event(id: "restored", eventType: .menstrual, date: Date(), note: "from backup")
-        store.add(restored)
-
-        let generated = store.generateInitialCycleEventsIfEmpty(startDate: Date(), cycleLength: 28)
-
-        XCTAssertFalse(generated)
-        XCTAssertEqual(store.events.map(\.id), ["restored"])
-    }
-
-    func testInitialGenerationRunsWhenEmpty() {
-        XCTAssertTrue(store.generateInitialCycleEventsIfEmpty(startDate: Date(), cycleLength: 28))
-        XCTAssertEqual(store.events.count, 28)
-    }
-
     func testClearAllEventsEmptiesStore() {
         store.generateCycleEvents(startDate: Date(), cycleLength: 28)
         store.clearAllEvents()

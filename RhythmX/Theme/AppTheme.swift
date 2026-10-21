@@ -55,13 +55,6 @@ struct AppTheme: Identifiable, Equatable {
     /// The tab bar is the card colour with a little accent in it.
     static func tabBar(_ p: Palette) -> RGB { RGB.mix(p.card, p.accent, 0.07) }
 
-    /// Text drawn over the waves. Blush keeps white over its plum waves in both appearances. A Plus theme's
-    /// waves are derived from its accent, so it uses `onAccent`: white on the dark light-mode accents and dark
-    /// on the light dark-mode accents, where white would not read.
-    static func onWave(_ theme: AppTheme, _ palette: Palette) -> RGB {
-        theme == .blush ? RGB(r: 255, g: 255, b: 255) : palette.onAccent
-    }
-
     // MARK: Catalogue
 
     /// Blush is the app's original palette and does not change. Its ink and muted values are the system label

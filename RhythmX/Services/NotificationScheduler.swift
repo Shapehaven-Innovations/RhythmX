@@ -10,12 +10,18 @@ struct NotificationScheduler {
     static let fertileStartID = "rhythmx.fertile.start"
     static let fertileOvulationID = "rhythmx.fertile.ovulation"
     static let fertileIdentifiers = [fertileStartID, fertileOvulationID]
-    static let reminderPrefix = "rhythmx.reminder."
     static let checkInPrefix = "rhythmx.checkin."
-    static let dailyCheckInID = "rhythmx.checkin.daily"
     static let weeklyCheckInID = "rhythmx.checkin.weekly"
 
-    /// Every reminder fires at this time unless the user picked one.
+    /// `userInfo["destination"]`: where a tap leads.
+    enum Destination: String {
+        /// The Patterns view on the Tags tab (the weekly check-in).
+        case weeklyReview
+        /// The quick log (the Daily insights note).
+        case quickLog
+    }
+
+    /// Period and fertile window reminders fire at this time.
     static let morningHour = 8
 
     static func requestPermissionIfNeeded(completion: @escaping (Bool) -> Void) {
@@ -35,25 +41,50 @@ struct NotificationScheduler {
         }
     }
 
-    // MARK: - Period reminders (unchanged)
+    // MARK: - Lock Screen privacy
 
-    static func scheduleCycleReminders(for date: Date, dayBefore: Bool, dayOf: Bool) {
+    /// Lock Screen privacy: with the switch on, every RhythmX notification (period, fertile window, weekly
+    /// review and Daily insights) shows only this neutral text. Stored under the Daily insights key it started
+    /// with (`AppSettings.dailyInsightsDiscreetKey`), so backups and earlier builds keep working.
+    static let discreetTitle = "RhythmX"
+    static let discreetReminderBody = "A reminder from RhythmX"
+
+    /// The Lock Screen privacy switch as stored, for scheduling paths that have no AppSettings.
+    static func isDiscreet(defaults: UserDefaults = AppGroup.defaults) -> Bool {
+        defaults.bool(forKey: AppSettings.dailyInsightsDiscreetKey)
+    }
+
+    // MARK: - Period reminders
+
+    static let periodTitle = "Cycle Reminder"
+    static let periodDayBeforeBody = "Your cycle is anticipated to start tomorrow. Be prepared."
+    static let periodDayOfBody = "Menstrual cycle is anticipated to start today."
+
+    /// The period reminder's text; neutral with Lock Screen privacy on.
+    static func periodContent(dayBefore: Bool, discreet: Bool) -> (title: String, body: String) {
+        if discreet { return (discreetTitle, discreetReminderBody) }
+        return (periodTitle, dayBefore ? periodDayBeforeBody : periodDayOfBody)
+    }
+
+    static func scheduleCycleReminders(for date: Date, dayBefore: Bool, dayOf: Bool, discreet: Bool = isDiscreet()) {
         cancelAllCycleReminders()
 
         if dayBefore, let dayBeforeDate = Calendar.current.date(byAdding: .day, value: -1, to: date) {
+            let text = periodContent(dayBefore: true, discreet: discreet)
             schedule(
                 id: "rhythmx.cycle.daybefore",
-                title: "Cycle Reminder",
-                body: "Your cycle is anticipated to start tomorrow. Be prepared.",
+                title: text.title,
+                body: text.body,
                 date: dayBeforeDate
             )
         }
 
         if dayOf {
+            let text = periodContent(dayBefore: false, discreet: discreet)
             schedule(
                 id: "rhythmx.cycle.dayof",
-                title: "Cycle Reminder",
-                body: "Menstrual cycle is anticipated to start today.",
+                title: text.title,
+                body: text.body,
                 date: date
             )
         }
@@ -95,23 +126,26 @@ struct NotificationScheduler {
     }
 
     /// Pure: the requests for the fertile window. Nothing in Menopause mode, nothing at or before `now`.
+    /// Neutral text with Lock Screen privacy on.
     static func fertileRequests(window: ClosedRange<Date>?, ovulation: Date?, startOn: Bool, ovulationOn: Bool,
                                 mode: TrackingMode, now: Date = Date(),
-                                calendar: Calendar = .current) -> [UNNotificationRequest] {
+                                calendar: Calendar = .current, discreet: Bool = false) -> [UNNotificationRequest] {
         guard mode != .menopause else { return [] }
         var requests: [UNNotificationRequest] = []
 
         if startOn, let start = window?.lowerBound,
            let request = oneOffRequest(id: fertileStartID,
-                                       title: "Fertile window",
-                                       body: "Your fertile window is estimated to start today. Estimates only.",
+                                       title: discreet ? discreetTitle : "Fertile window",
+                                       body: discreet ? discreetReminderBody
+                                           : "Your fertile window is estimated to start today. Estimates only.",
                                        date: start, now: now, calendar: calendar) {
             requests.append(request)
         }
         if ovulationOn, let ovulation,
            let request = oneOffRequest(id: fertileOvulationID,
-                                       title: "Likely ovulation",
-                                       body: "Today is your likely ovulation day. Estimates only.",
+                                       title: discreet ? discreetTitle : "Likely ovulation",
+                                       body: discreet ? discreetReminderBody
+                                           : "Today is your likely ovulation day. Estimates only.",
                                        date: ovulation, now: now, calendar: calendar) {
             requests.append(request)
         }
@@ -120,11 +154,11 @@ struct NotificationScheduler {
 
     /// Cancels both fertile identifiers, then adds whatever `fertileRequests` returns.
     static func scheduleFertileReminders(window: ClosedRange<Date>?, ovulation: Date?, startOn: Bool,
-                                         ovulationOn: Bool, mode: TrackingMode) {
+                                         ovulationOn: Bool, mode: TrackingMode, discreet: Bool = isDiscreet()) {
         let center = UNUserNotificationCenter.current()
         center.removePendingNotificationRequests(withIdentifiers: fertileIdentifiers)
         for request in fertileRequests(window: window, ovulation: ovulation, startOn: startOn,
-                                       ovulationOn: ovulationOn, mode: mode) {
+                                       ovulationOn: ovulationOn, mode: mode, discreet: discreet) {
             center.add(request)
         }
     }
@@ -145,87 +179,84 @@ struct NotificationScheduler {
         return UNNotificationRequest(identifier: id, content: content, trigger: trigger)
     }
 
-    // MARK: - Check-ins
+    // MARK: - Weekly review check-in
 
-    /// Pure: the daily check-in (one request per selected weekday, or one every-day request) and the
-    /// weekly check-in (exactly one request). The daily one opens the tag form on the mode's main
-    /// category; the weekly one opens the Patterns view.
-    static func checkInRequests(daily: CheckInSetting?, weekly: CheckInSetting?, mode: TrackingMode) -> [UNNotificationRequest] {
-        var requests: [UNNotificationRequest] = []
+    /// Pure: the weekly review check-in, exactly one repeating request that opens the Patterns view.
+    /// Neutral text with Lock Screen privacy on.
+    static func checkInRequests(weekly: CheckInSetting?, discreet: Bool = false) -> [UNNotificationRequest] {
+        guard let weekly, weekly.isOn else { return [] }
+        return [repeatingRequest(id: weeklyCheckInID, title: discreet ? discreetTitle : "Weekly check-in",
+                                 body: discreet ? discreetReminderBody : "Take a look at your patterns from this week.",
+                                 hour: weekly.hour, minute: weekly.minute, weekday: weekly.singleWeekday,
+                                 userInfo: ["destination": Destination.weeklyReview.rawValue])]
+    }
 
-        if let daily, daily.isOn {
-            let userInfo: [String: String] = [
-                "category": mode.mainCategory.rawValue,
-                "destination": LoggingReminder.Destination.tagForm.rawValue
-            ]
-            if daily.weekdays.isEmpty {
-                requests.append(repeatingRequest(id: dailyCheckInID, title: "Daily check-in",
-                                                 body: "How are you feeling today? Tap to log a tag.",
-                                                 hour: daily.hour, minute: daily.minute, weekday: nil, userInfo: userInfo))
-            } else {
-                for weekday in daily.weekdays.sorted() {
-                    requests.append(repeatingRequest(id: "\(dailyCheckInID).\(weekday)", title: "Daily check-in",
-                                                     body: "How are you feeling today? Tap to log a tag.",
-                                                     hour: daily.hour, minute: daily.minute, weekday: weekday, userInfo: userInfo))
-                }
-            }
+    /// Cancels every `rhythmx.checkin.` request (which also clears any daily check-in left by an earlier build),
+    /// then adds the weekly one.
+    static func scheduleCheckIns(weekly: CheckInSetting?, discreet: Bool = isDiscreet()) {
+        replace(prefix: checkInPrefix, with: checkInRequests(weekly: weekly, discreet: discreet))
+    }
+
+    // MARK: - Daily insights
+
+    static let insightPrefix = "rhythmx.insight."
+    /// The gentle nudge after the day's insight.
+    static let insightLogNudge = "Tap to log how today feels."
+    /// Lock Screen privacy: no cycle details at all.
+    static let discreetInsightTitle = discreetTitle
+    static let discreetInsightBody = "Your daily note is ready"
+
+    /// "rhythmx.insight.2026-10-21" for the note on that day.
+    static func insightIdentifier(for day: Date, calendar: Calendar = .current) -> String {
+        let parts = calendar.dateComponents([.year, .month, .day], from: day)
+        return insightPrefix + String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
+    }
+
+    /// The Lock Screen text for a day's insights.
+    static func insightContent(_ insights: DailyInsights, discreet: Bool) -> (title: String, body: String) {
+        if discreet { return (discreetInsightTitle, discreetInsightBody) }
+        return (insights.notificationTitle, "\(insights.notificationBody) \(insightLogNudge)")
+    }
+
+    /// Pure: one non-repeating request for each of the next `days` notes at the chosen time, never at or before
+    /// `now`. Each carries that day's note for the current mode: `written` when it has one for the day's facts,
+    /// else the template's. A tap opens the quick log. Nothing when the setting is off or not authorized.
+    static func dailyInsightRequests(setting: DailyInsightsSetting, authorized: Bool, mode: TrackingMode,
+                                     events: [Event], archivedBlocks: [ArchivedDataBlock], overrides: FertileOverrides,
+                                     now: Date = Date(), calendar: Calendar = .current, days: Int = 7,
+                                     written: (Date, InsightFacts) -> DailyInsights? = { _, _ in nil }) -> [UNNotificationRequest] {
+        guard setting.isOn, authorized else { return [] }
+        let template = TemplateInsightWriter()
+        return setting.fireDates(after: now, count: days, calendar: calendar).map { fire in
+            let facts = InsightFacts.make(events: events, archivedBlocks: archivedBlocks, mode: mode, today: fire,
+                                          fertileOverrides: overrides, calendar: calendar)
+            let insights = written(fire, facts) ?? template.insights(for: facts)
+            let text = insightContent(insights, discreet: setting.discreet)
+
+            let content = UNMutableNotificationContent()
+            content.title = text.title
+            content.body = text.body
+            content.sound = .default
+            content.userInfo = ["destination": Destination.quickLog.rawValue]
+            let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: fire)
+            let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+            return UNNotificationRequest(identifier: insightIdentifier(for: fire, calendar: calendar),
+                                         content: content, trigger: trigger)
         }
-
-        if let weekly, weekly.isOn {
-            requests.append(repeatingRequest(id: weeklyCheckInID, title: "Weekly check-in",
-                                             body: "Take a look at your patterns from this week.",
-                                             hour: weekly.hour, minute: weekly.minute, weekday: weekly.singleWeekday,
-                                             userInfo: ["destination": LoggingReminder.Destination.weeklyReview.rawValue]))
-        }
-        return requests
-    }
-
-    /// Cancels every `rhythmx.checkin.` request, then adds the current ones.
-    static func scheduleCheckIns(daily: CheckInSetting?, weekly: CheckInSetting?, mode: TrackingMode) {
-        let requests = checkInRequests(daily: daily, weekly: weekly, mode: mode)
-        replace(prefix: checkInPrefix, with: requests)
-    }
-
-    // MARK: - Tag reminders
-
-    /// Pure: one repeating request per weekday for each reminder that is on and belongs to `activeMode`.
-    static func requests(for reminders: [LoggingReminder], activeMode: TrackingMode) -> [UNNotificationRequest] {
-        reminders
-            .filter { $0.isOn && $0.mode == activeMode }
-            .flatMap { reminder -> [UNNotificationRequest] in
-                let weekdays = reminder.weekdays.isEmpty ? Array(1...7) : reminder.weekdays.sorted()
-                let userInfo = [
-                    "category": reminder.category.rawValue,
-                    "destination": reminder.destination.rawValue
-                ]
-                return weekdays.map { weekday in
-                    repeatingRequest(id: "\(reminderPrefix)\(reminder.id.uuidString).\(weekday)",
-                                     title: reminder.title,
-                                     body: reminder.destination == .weeklyReview
-                                        ? "Take a look at your patterns."
-                                        : "Tap to log in \(reminder.category.rawValue).",
-                                     hour: reminder.hour, minute: reminder.minute, weekday: weekday, userInfo: userInfo)
-                }
-            }
-    }
-
-    /// Cancels every `rhythmx.reminder.` request, then adds the current mode's reminders.
-    static func scheduleLoggingReminders(_ reminders: [LoggingReminder], activeMode: TrackingMode) {
-        replace(prefix: reminderPrefix, with: requests(for: reminders, activeMode: activeMode))
     }
 
     // MARK: - Everything at once
 
-    /// Reschedules the fertile window, check-in and tag reminders from the current state. Called where
-    /// period reminders are rescheduled: settings changes, event changes and mode changes.
-    static func rescheduleAll(events: [Event], overrides: FertileOverrides, settings: AppSettings,
-                              reminders: [LoggingReminder] = ReminderStore.load()) {
+    /// Reschedules the fertile window, the weekly check-in and the Daily insights notes from the current
+    /// state. Called where period reminders are rescheduled: settings changes, event changes and mode changes.
+    @MainActor
+    static func rescheduleAll(events: [Event], overrides: FertileOverrides, settings: AppSettings) {
         let mode = settings.trackingMode
         let dates = fertileDates(events: events, overrides: overrides)
         scheduleFertileReminders(window: dates.window, ovulation: dates.ovulation,
                                  startOn: settings.fertileStartOn, ovulationOn: settings.fertileOvulationOn, mode: mode)
-        scheduleCheckIns(daily: settings.dailyCheckIn, weekly: settings.weeklyCheckIn, mode: mode)
-        scheduleLoggingReminders(reminders, activeMode: mode)
+        scheduleCheckIns(weekly: settings.weeklyCheckIn)
+        DailyInsightsCoordinator.shared.update(write: false)
     }
 
     // MARK: - Helpers
@@ -264,10 +295,12 @@ extension Notification.Name {
     static let rhythmxOpenTagForm = Notification.Name("rhythmxOpenTagForm")
     /// Opens the Tags tab with the Patterns segment.
     static let rhythmxOpenPatterns = Notification.Name("rhythmxOpenPatterns")
+    /// Opens the quick log (`QuickLogRoute`) for the current mode.
+    static let rhythmxOpenQuickLog = Notification.Name("rhythmxOpenQuickLog")
 }
 
 /// Turns a notification tap into an in-app `Notification.Name` post, which the tab view handles.
-/// Period reminders carry no userInfo and simply open the app, as before.
+/// Period and fertile window reminders carry no userInfo and simply open the app, as before.
 final class NotificationTapRouter: NSObject, UNUserNotificationCenterDelegate {
     static let shared = NotificationTapRouter()
 
@@ -277,9 +310,16 @@ final class NotificationTapRouter: NSObject, UNUserNotificationCenterDelegate {
 
     /// The in-app notification for a tap, or nil when the tap just opens the app.
     static func route(for userInfo: [AnyHashable: Any]) -> (name: Notification.Name, userInfo: [String: String])? {
-        if userInfo["destination"] as? String == LoggingReminder.Destination.weeklyReview.rawValue {
+        switch userInfo["destination"] as? String {
+        case NotificationScheduler.Destination.weeklyReview.rawValue?:
             return (.rhythmxOpenPatterns, [:])
+        case NotificationScheduler.Destination.quickLog.rawValue?:
+            return (.rhythmxOpenQuickLog, [:])
+        default:
+            break
         }
+        // Tag reminders and daily check-ins from earlier 2.0 builds carried a category; one still in
+        // Notification Center opens the tag form on it.
         if let raw = userInfo["category"] as? String, TagCategory(rawValue: raw) != nil {
             return (.rhythmxOpenTagForm, ["category": raw])
         }

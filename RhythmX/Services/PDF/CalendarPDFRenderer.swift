@@ -1,9 +1,9 @@
 //  CalendarPDFRenderer.swift
 //
 //  The printable monthly calendar: one page, drawn on the device with UIGraphicsPDFRenderer. Day cells are
-//  tinted by phase with the user's phase colors, each day carries its moon glyph, period and fertile days are
-//  marked, predicted period days get a dashed outline, and the page carries the moon logo mark. The page never
-//  shows the app's name. The PDF is always light; the app theme does not reach it.
+//  tinted by phase with the fixed phase colors, each day carries its moon glyph, period and fertile days are
+//  marked, predicted period days get a dashed outline, and the page carries the app icon as an image. The page
+//  never shows the app's name as text. The PDF is always light; the app theme does not reach it.
 //
 //  Cycle data only: menopause events and blocks are dropped here as well, whatever the caller passes in, so
 //  the printout can never show a menopause entry as a cycle phase.
@@ -26,12 +26,31 @@ enum PaperSize: String, CaseIterable, Identifiable {
         locale.region?.identifier == "US" ? .letter : .a4
     }
 
-    /// Points.
+    enum Orientation: String, CaseIterable, Identifiable {
+        case portrait
+        case landscape
+
+        var id: String { rawValue }
+
+        var title: String {
+            switch self {
+            case .portrait:  return "Portrait"
+            case .landscape: return "Landscape"
+            }
+        }
+    }
+
+    /// Portrait size in points (1/72 inch): Letter is 8.5 x 11 in, A4 is 210 x 297 mm.
     var size: CGSize {
         switch self {
         case .letter: return CGSize(width: 612, height: 792)
         case .a4:     return CGSize(width: 595, height: 842)
         }
+    }
+
+    /// Size in points for `orientation`; landscape swaps width and height.
+    func size(_ orientation: Orientation) -> CGSize {
+        orientation == .portrait ? size : CGSize(width: size.height, height: size.width)
     }
 
     var title: String {
@@ -50,7 +69,7 @@ enum PDFDrawing {
     static let muted = UIColor(red: 0.43, green: 0.43, blue: 0.45, alpha: 1)
     static let line = UIColor(red: 0.85, green: 0.85, blue: 0.87, alpha: 1)
     static let faint = UIColor(red: 0.96, green: 0.96, blue: 0.97, alpha: 1)
-    /// The brand accent of the light theme; the logo mark and today's outline use it.
+    /// The brand accent of the light theme; today's outline and the report charts use it.
     static let accent = UIColor(red: 94 / 255, green: 38 / 255, blue: 79 / 255, alpha: 1)
 
     static let margin: CGFloat = 36
@@ -64,10 +83,11 @@ enum PDFDrawing {
         UIColor(color).resolvedColor(with: UITraitCollection(userInterfaceStyle: .light))
     }
 
-    static func attributes(_ font: UIFont, color: UIColor = ink, alignment: NSTextAlignment = .left) -> [NSAttributedString.Key: Any] {
+    static func attributes(_ font: UIFont, color: UIColor = ink, alignment: NSTextAlignment = .left,
+                           lineBreak: NSLineBreakMode = .byTruncatingTail) -> [NSAttributedString.Key: Any] {
         let paragraph = NSMutableParagraphStyle()
         paragraph.alignment = alignment
-        paragraph.lineBreakMode = .byTruncatingTail
+        paragraph.lineBreakMode = lineBreak
         return [.font: font, .foregroundColor: color, .paragraphStyle: paragraph]
     }
 
@@ -87,15 +107,49 @@ enum PDFDrawing {
         return min(attributed.size().width, rect.width)
     }
 
-    /// Multi-line paragraph. Returns the height used.
+    /// Multi-line paragraph, wrapped at word boundaries. Returns the height used.
     @discardableResult
     static func paragraph(_ string: String, in rect: CGRect, font: UIFont, color: UIColor = ink) -> CGFloat {
-        let attributed = NSAttributedString(string: string, attributes: attributes(font, color: color))
+        let attributed = NSAttributedString(string: string, attributes: attributes(font, color: color, lineBreak: .byWordWrapping))
         let bounds = attributed.boundingRect(with: CGSize(width: rect.width, height: .greatestFiniteMagnitude),
                                              options: [.usesLineFragmentOrigin], context: nil)
         attributed.draw(with: CGRect(x: rect.minX, y: rect.minY, width: rect.width, height: min(ceil(bounds.height), rect.height)),
                         options: [.usesLineFragmentOrigin], context: nil)
         return ceil(bounds.height)
+    }
+
+    // MARK: App icon
+
+    /// The real app icon, from the `ExportLogo` image set (a copy of the 1024 px App Icon, since an app icon
+    /// set cannot be loaded by name). The art carries no text, so the calendar stays free of the app name.
+    static var appIconImage: UIImage? { UIImage(named: "ExportLogo") }
+
+    /// The icon scaled down once to a size that prints sharply at the header size, so each PDF embeds a small
+    /// image instead of the full 1024 px file.
+    private static let appIconThumbnail: UIImage? = {
+        guard let image = appIconImage else { return nil }
+        let side: CGFloat = 192
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        format.opaque = true
+        return UIGraphicsImageRenderer(size: CGSize(width: side, height: side), format: format).image { _ in
+            image.draw(in: CGRect(x: 0, y: 0, width: side, height: side))
+        }
+    }()
+
+    /// Draws the app icon into `rect`, clipped to the iOS icon's rounded corners. Returns false, and draws
+    /// nothing, when the image cannot be loaded.
+    @discardableResult
+    static func drawAppIcon(in context: CGContext, rect: CGRect) -> Bool {
+        guard let icon = appIconThumbnail else { return false }
+        context.saveGState()
+        context.addPath(UIBezierPath(roundedRect: rect, cornerRadius: rect.width * 0.2237).cgPath)
+        context.clip()
+        UIGraphicsPushContext(context)
+        icon.draw(in: rect)
+        UIGraphicsPopContext()
+        context.restoreGState()
+        return true
     }
 
     static func rule(_ context: CGContext, from: CGPoint, to: CGPoint, color: UIColor = line, width: CGFloat = 0.5) {
@@ -167,14 +221,14 @@ struct CalendarPDFRenderer {
     let fertileOverrides: FertileOverrides
     let calendar: Calendar
 
-    /// - Parameter colors: the four phase colors in `Event.EventType.allCases` order.
-    init(events: [Event], archivedBlocks: [ArchivedDataBlock], colors: [Color],
+    /// The page always uses the fixed phase colors, in their light variant.
+    init(events: [Event], archivedBlocks: [ArchivedDataBlock],
          fertileOverrides: FertileOverrides = FertileOverrides(), calendar: Calendar = .current) {
         self.events = events.filter { $0.effectiveMode != .menopause }
         self.archivedBlocks = archivedBlocks.filter { $0.effectiveMode != .menopause }
         var map: [Event.EventType: UIColor] = [:]
-        for (index, phase) in Event.EventType.allCases.enumerated() {
-            map[phase] = PDFDrawing.lightColor(index < colors.count ? colors[index] : phase.defaultPhaseColor)
+        for phase in Event.EventType.allCases {
+            map[phase] = PDFDrawing.lightColor(phase.defaultPhaseColor)
         }
         self.colors = map
         self.fertileOverrides = fertileOverrides
@@ -219,9 +273,12 @@ struct CalendarPDFRenderer {
 
     // MARK: Page
 
-    func render(month: Date, paper: PaperSize, lightTints: Bool, today: Date = Date()) -> Data {
+    /// Landscape uses the same layout on a wider, shorter page: the cells get wide and short so a six-row
+    /// month still fits above the legend and footer.
+    func render(month: Date, paper: PaperSize, orientation: PaperSize.Orientation = .portrait,
+                lightTints: Bool, today: Date = Date()) -> Data {
         let model = CalendarMonthModel(containing: month, calendar: calendar)
-        let page = CGRect(origin: .zero, size: paper.size)
+        let page = CGRect(origin: .zero, size: paper.size(orientation))
         let renderer = UIGraphicsPDFRenderer(bounds: page, format: PDFDrawing.format(title: "Calendar \(model.title)"))
         let tinted = tintedDays(month: month)
         let fertile = fertileDays(month: month)
@@ -235,12 +292,11 @@ struct CalendarPDFRenderer {
             let margin = PDFDrawing.margin
             let contentWidth = page.width - 2 * margin
 
-            // Header: month title on the left, the moon mark on the right. No app name.
+            // Header: month title on the left, the app icon on the right. No app name in the text.
             let logoSize: CGFloat = 30
             PDFDrawing.text(model.title, in: CGRect(x: margin, y: margin, width: contentWidth - logoSize - 12, height: 30),
                             font: PDFDrawing.font(22, weight: .bold))
-            MoonLogoMark.draw(in: cg, rect: CGRect(x: page.maxX - margin - logoSize, y: margin - 2, width: logoSize, height: logoSize),
-                              color: PDFDrawing.accent)
+            PDFDrawing.drawAppIcon(in: cg, rect: CGRect(x: page.maxX - margin - logoSize, y: margin - 2, width: logoSize, height: logoSize))
             PDFDrawing.text("Phase calendar with logged and predicted days",
                             in: CGRect(x: margin, y: margin + 30, width: contentWidth - logoSize - 12, height: 14),
                             font: PDFDrawing.font(9.5), color: PDFDrawing.muted)

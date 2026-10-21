@@ -6,7 +6,8 @@
 //  calendar list and cannot create a calendar (WWDC23 "Discover Calendar and EventKit"). A dedicated calendar
 //  that is updated when data changes and emptied when sync is turned off therefore needs FULL access. Every
 //  read and write below is restricted to the "RhythmX" calendar: no predicate ever spans another calendar and
-//  no other calendar's events are touched. Nothing leaves the device.
+//  no other calendar's events are touched. The calendar is made On My iPhone so it stays on the device; only an
+//  iPhone with no such account (iCloud Calendar only) gets it in iCloud, and the Calendar card then says so.
 //
 //  When Plus is no longer active the app stops syncing at once, but removes its events and turns the switch off
 //  only after StoreKit has confirmed the lapse this session and the grace period is over (`CalendarSyncPolicy`).
@@ -256,17 +257,52 @@ enum CalendarSyncPolicy {
     }
 }
 
+// MARK: - Calendar source
+
+/// A calendar account the "RhythmX" calendar could live in, as far as the choice needs to know.
+struct CalendarSourceCandidate: Equatable {
+    enum Kind: Equatable { case local, iCloud, other }
+    let id: String
+    let kind: Kind
+}
+
+/// Where the "RhythmX" calendar is made. Everything RhythmX keeps stays on the device, so the on-device
+/// ("On My iPhone") account comes first. Some iPhones with iCloud Calendar on list no such account; then the
+/// calendar goes to iCloud, then wherever new events go by default, and the app says so (`syncsOffDevice`).
+enum CalendarSourcePlanner {
+    static func order(sources: [CalendarSourceCandidate], defaultSource: CalendarSourceCandidate?) -> [CalendarSourceCandidate] {
+        var result: [CalendarSourceCandidate] = []
+        func add(_ source: CalendarSourceCandidate?) {
+            guard let source, !result.contains(where: { $0.id == source.id }) else { return }
+            result.append(source)
+        }
+        add(sources.first { $0.kind == .local })
+        add(sources.first { $0.kind == .iCloud })
+        add(defaultSource)
+        return result
+    }
+
+    /// True when a calendar in this account syncs off the device.
+    static func syncsOffDevice(_ source: CalendarSourceCandidate) -> Bool { source.kind != .local }
+}
+
 // MARK: - Store
 
 /// The calendar the app writes to. `EventKitCalendarStore` is the real one; tests use a fake.
 @MainActor
 protocol CalendarSyncStore: AnyObject {
     var hasAccess: Bool { get }
+    /// True when the app's calendar is (or, before it exists, would be) in an account that syncs off the device.
+    var syncsOffDevice: Bool { get }
     func requestAccess() async throws -> Bool
     /// Makes the "RhythmX" calendar hold exactly `desired` among the app's own events.
     func replaceItems(with desired: Set<SyncItem>) throws
     /// Deletes every event the app created. The calendar itself stays. Never touches another calendar.
     func removeAll() throws
+}
+
+extension CalendarSyncStore {
+    var syncsOffDevice: Bool { false }
 }
 
 // MARK: - Coordinator
@@ -295,6 +331,11 @@ final class CalendarSync: ObservableObject {
     /// Sync is on but calendar access is gone (revoked in iOS Settings). The Calendar tab hides its chip and the
     /// Settings card shows `lastError`.
     @Published private(set) var accessDenied = false
+    /// `iCloudDisclosure` when the RhythmX calendar syncs off the device (no On My iPhone account); nil otherwise.
+    @Published private(set) var offDeviceNote: String?
+
+    /// Shown on the Calendar card when the calendar could not be kept on the device.
+    static let iCloudDisclosure = "Your calendars are stored in iCloud, so this calendar will sync through your iCloud account."
 
     private let store: CalendarSyncStore
     private let calendar: Calendar
@@ -316,6 +357,7 @@ final class CalendarSync: ObservableObject {
             let granted = try await store.requestAccess()
             if !granted { lastError = SyncError.accessDenied.errorDescription }
             accessDenied = !granted
+            updateOffDeviceNote()
             return granted
         } catch {
             lastError = error.localizedDescription
@@ -334,6 +376,11 @@ final class CalendarSync: ObservableObject {
         try store.replaceItems(with: desired)
         lastSyncedAt = Date()
         lastError = nil
+        updateOffDeviceNote()
+    }
+
+    private func updateOffDeviceNote() {
+        offDeviceNote = hasAccess && store.syncsOffDevice ? Self.iCloudDisclosure : nil
     }
 
     /// The sync the app runs on its own (launch, foreground, entitlement and data changes, option changes in
@@ -505,6 +552,35 @@ final class EventKitCalendarStore: CalendarSyncStore {
 
     var hasAccess: Bool { EKEventStore.authorizationStatus(for: .event) == .fullAccess }
 
+    /// The app's calendar's account when it exists; otherwise the account a new one would go to.
+    var syncsOffDevice: Bool {
+        guard hasAccess else { return false }
+        if let id = defaults.string(forKey: Self.calendarIdentifierKey), let saved = store.calendar(withIdentifier: id) {
+            return saved.source.map { CalendarSourcePlanner.syncsOffDevice(Self.candidate($0)) } ?? false
+        }
+        guard let first = candidateSources().first else { return false }
+        return CalendarSourcePlanner.syncsOffDevice(Self.candidate(first))
+    }
+
+    private static func candidate(_ source: EKSource) -> CalendarSourceCandidate {
+        let kind: CalendarSourceCandidate.Kind
+        switch source.sourceType {
+        case .local: kind = .local
+        case .calDAV where source.title.lowercased().contains("icloud"): kind = .iCloud
+        default: kind = .other
+        }
+        return CalendarSourceCandidate(id: source.sourceIdentifier, kind: kind)
+    }
+
+    /// The accounts to try, in `CalendarSourcePlanner` order.
+    private func candidateSources() -> [EKSource] {
+        let sources = store.sources
+        let order = CalendarSourcePlanner.order(sources: sources.map(Self.candidate),
+                                                defaultSource: store.defaultCalendarForNewEvents?.source.map(Self.candidate))
+        let all = sources + [store.defaultCalendarForNewEvents?.source].compactMap { $0 }
+        return order.compactMap { pick in all.first { $0.sourceIdentifier == pick.id } }
+    }
+
     func requestAccess() async throws -> Bool {
         try await store.requestFullAccessToEvents()
     }
@@ -525,7 +601,7 @@ final class EventKitCalendarStore: CalendarSyncStore {
         try store.commit()
     }
 
-    /// Removes only the app's own events. The calendar is never deleted: it may hold events she added herself,
+    /// Removes only the app's own events. The calendar is never deleted: it may hold events the person added,
     /// and an empty calendar is harmless and is reused when sync is turned on again.
     func removeAll() throws {
         guard hasAccess, let ekCalendar = try ownCalendar(createIfMissing: false) else { return }
@@ -561,19 +637,12 @@ final class EventKitCalendarStore: CalendarSyncStore {
         return try createCalendar()
     }
 
-    /// iCloud first so her other devices see it, then this device only, then wherever new events go by default.
-    /// Each source is tried in turn; a source that refuses the calendar falls through to the next.
+    /// On this device first (On My iPhone), so nothing syncs off it; then iCloud, then wherever new events go by
+    /// default (`CalendarSourcePlanner`). Each source is tried in turn; a source that refuses the calendar falls
+    /// through to the next.
     private func createCalendar() throws -> EKCalendar {
-        var candidates: [EKSource] = []
-        func add(_ source: EKSource?) {
-            guard let source, !candidates.contains(where: { $0.sourceIdentifier == source.sourceIdentifier }) else { return }
-            candidates.append(source)
-        }
-        add(store.sources.first { $0.sourceType == .calDAV && $0.title.lowercased().contains("icloud") })
-        add(store.sources.first { $0.sourceType == .local })
-        add(store.defaultCalendarForNewEvents?.source)
         var lastError: Error?
-        for source in candidates {
+        for source in candidateSources() {
             let created = EKCalendar(for: .event, eventStore: store)
             created.title = CalendarSync.calendarTitle
             created.source = source

@@ -29,8 +29,6 @@ final class BackupFileTests: XCTestCase {
             trackingMode: "cycle",
             defaultModeOnLaunch: "last",
             themeID: "default",
-            reminders: [],
-            dailyCheckIn: nil,
             weeklyCheckIn: nil
         )
         return BackupPayload(events: events, archivedBlocks: [block], settings: settings)
@@ -222,5 +220,45 @@ final class BackupFileTests: XCTestCase {
 
     func testShortBlobIsCorrupted() {
         assertThrows(.corrupted) { _ = try BackupCrypto.open(Data(count: 10), passphrase: "pw") }
+    }
+
+    // MARK: - Settings written by earlier builds
+
+    /// Files written before 2.0 shipped carried `reminders: [String]` and `dailyCheckIn/weeklyCheckIn: String?`.
+    /// They must still open; the placeholder values read as absent and the other fields as before.
+    func testFormatOneBackupWithPlaceholderShapesStillOpens() throws {
+        let settingsJSON: [String: Any] = [
+            "phaseColors": ["#111111", "#222222", "#333333", "#444444"],
+            "notificationsEnabled": true,
+            "notifyDayBefore": false,
+            "notifyDayOf": true,
+            "fertileStartOn": false,
+            "fertileOvulationOn": true,
+            "trackingMode": "cycle",
+            "defaultModeOnLaunch": "menopause",
+            "themeID": "default",
+            "reminders": ["old placeholder", "another"],
+            "dailyCheckIn": "20:00",
+            "weeklyCheckIn": "18:00",
+            "dailyInsightsOn": "yes"
+        ]
+        let payloadJSON: [String: Any] = ["events": [], "archivedBlocks": [], "settings": settingsJSON]
+        let body = try JSONSerialization.data(withJSONObject: payloadJSON)
+        let envelope: [String: Any] = [
+            "formatVersion": 1,
+            "appVersion": "2.0.0",
+            "createdAt": "2026-10-19T10:00:00Z",
+            "encrypted": false,
+            "body": body.base64EncodedString()
+        ]
+        let restored = try BackupFile.open(try JSONSerialization.data(withJSONObject: envelope), passphrase: nil)
+
+        XCTAssertNil(restored.settings.weeklyCheckIn)
+        XCTAssertNil(restored.settings.dailyInsightsOn, "a value of the wrong shape reads as absent")
+        XCTAssertTrue(restored.settings.notificationsEnabled)
+        XCTAssertTrue(restored.settings.notifyDayOf)
+        XCTAssertTrue(restored.settings.fertileOvulationOn)
+        XCTAssertEqual(restored.settings.defaultModeOnLaunch, "menopause")
+        XCTAssertEqual(restored.settings.phaseColors.count, 4)
     }
 }

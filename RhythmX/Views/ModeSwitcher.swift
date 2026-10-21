@@ -1,10 +1,13 @@
 //  ModeSwitcher.swift
-//  The three-segment pill under the Insights title: Cycle, Planning, Menopause. One tap switches the mode.
+//  The three-segment pill: Cycle, Planning, Menopause. One tap switches the mode. Today shows the compact
+//  glass pill at the top of the page, under the week strip.
 
 import SwiftUI
 
 struct ModeSwitcher: View {
     @Binding var mode: TrackingMode
+    /// A small glass capsule sized to its labels (Today) instead of the full-width rounded track.
+    var compact: Bool = false
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Namespace private var selection
@@ -17,11 +20,15 @@ struct ModeSwitcher: View {
                 segment(candidate)
             }
         }
-        .padding(2)
-        .background(
-            RoundedRectangle(cornerRadius: DS.Radius.button, style: .continuous)
-                .fill(Color(UIColor.tertiarySystemFill))
-        )
+        .padding(compact ? 3 : 2)
+        .background {
+            if compact {
+                Capsule().fill(Color.clear).glassEffect(.regular, in: Capsule())
+            } else {
+                RoundedRectangle(cornerRadius: DS.Radius.button, style: .continuous)
+                    .fill(Color(UIColor.tertiarySystemFill))
+            }
+        }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Tracking mode")
         .accessibilityValue(mode.title)
@@ -38,17 +45,18 @@ struct ModeSwitcher: View {
             }
         } label: {
             Text(candidate.title)
-                .font(DS.Font.label.weight(isSelected ? .semibold : .medium))
-                .foregroundColor(DS.Color.primaryText)
+                .font((compact ? Font.footnote : DS.Font.label).weight(isSelected ? .semibold : .medium))
+                .foregroundColor(compact && isSelected ? DS.Color.onAccent : DS.Color.primaryText)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
-                .padding(.vertical, DS.Spacing.sm)
-                .padding(.horizontal, DS.Spacing.xs)
-                .frame(maxWidth: .infinity)
+                .padding(.vertical, compact ? 7 : DS.Spacing.sm)
+                .padding(.horizontal, compact ? 14 : DS.Spacing.xs)
+                .frame(maxWidth: compact ? nil : .infinity)
+                .frame(minHeight: compact ? 36 : nil)
                 .background {
                     if isSelected {
-                        RoundedRectangle(cornerRadius: DS.Radius.button - 2, style: .continuous)
-                            .fill(DS.Color.cardBackground)
+                        RoundedRectangle(cornerRadius: compact ? 18 : DS.Radius.button - 2, style: .continuous)
+                            .fill(compact ? DS.Color.accent : DS.Color.cardBackground)
                             .shadow(color: Color.black.opacity(0.12), radius: 2, x: 0, y: 1)
                             .matchedGeometryEffect(id: "selected", in: selection)
                     }

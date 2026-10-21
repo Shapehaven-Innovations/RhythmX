@@ -150,6 +150,33 @@ enum PatternFinder {
         Set(weekOccurrences(events: events, archivedBlocks: archivedBlocks, today: today, calendar: calendar).map(\.weekIndex)).count
     }
 
+    /// The average level (1 light to 3 heavy) of `tag` over the same events the heatmap looks at: the last
+    /// `maxCycles` cycles in Cycle and Planning, the last `weeks` weeks of menopause events in Menopause.
+    /// Each event holding the tag counts once; logs without a level are left out. Nil when none has a level.
+    /// Intensity never changes any count above.
+    static func averageIntensity(tag: String, events: [Event], archivedBlocks: [ArchivedDataBlock], mode: TrackingMode,
+                                 today: Date = Date(), calendar: Calendar = .current) -> Double? {
+        let considered: [Event]
+        switch mode {
+        case .cycle, .planning:
+            considered = cycles(events: events, archivedBlocks: archivedBlocks, calendar: calendar).flatMap { $0.map(\.event) }
+        case .menopause:
+            let today = calendar.startOfDay(for: today)
+            let archived = archivedBlocks.filter { $0.effectiveMode == .menopause }.flatMap { $0.groupedEvents.flatMap(\.events) }
+            considered = (events + archived).filter { event in
+                guard event.effectiveMode == .menopause,
+                      let daysAgo = calendar.dateComponents([.day], from: calendar.startOfDay(for: event.date), to: today).day
+                else { return false }
+                return daysAgo >= 0 && daysAgo / 7 < weeks
+            }
+        }
+        let levels = considered
+            .filter { TagParser.split($0.tags).contains(tag) }
+            .compactMap { $0.intensity(for: tag)?.rawValue }
+        guard !levels.isEmpty else { return nil }
+        return Double(levels.reduce(0, +)) / Double(levels.count)
+    }
+
     /// How many more cycles (or weeks) are needed before a finding is possible.
     static func cyclesNeeded(available: Int) -> Int {
         max(0, minimumCycles - available)

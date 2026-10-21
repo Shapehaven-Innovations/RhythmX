@@ -88,6 +88,21 @@ final class ModeFilterTests: XCTestCase {
                      "menopause blocks alone give no period prediction")
     }
 
+    func testPredictionIgnoresTinyArchivedBlocks() {
+        // A block under 15 days (a period start logged by mistake and then logged again) must not drag the
+        // average down.
+        let cycleBlock = block(startingAt: anchor, cycleLength: 28)
+        let tinyEvents = (28..<31).map { Event(eventType: .menstrual, date: day($0), note: "") }
+        let tiny = ArchivedDataBlock(date: day(31), groupedEvents: [.init(eventType: .menstrual, events: tinyEvents)])
+        XCTAssertEqual(CyclePredictionService.predictedStartDate(from: [cycleBlock, tiny]), day(28 + 28),
+                       "only the 28 day cycle is averaged; the estimate counts from the latest start")
+        XCTAssertNil(CyclePredictionService.predictedStartDate(from: [tiny]), "a tiny block alone predicts nothing")
+
+        let stats = InsightsViewModel(events: [], archivedBlocks: [cycleBlock, tiny], appSettings: AppSettings())
+            .cycleStats(today: day(40))
+        XCTAssertEqual(stats.averageCycleLength, 28)
+    }
+
     // MARK: - Widget snapshot
 
     func testWidgetSnapshotIgnoresMenopauseEvents() {

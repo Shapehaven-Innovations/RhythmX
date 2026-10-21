@@ -162,44 +162,6 @@ final class Phase2FixTests: XCTestCase {
         XCTAssertEqual(early.likelyOvulation, d(13), "before any cycle, the earliest cycle is the one ahead")
     }
 
-    // MARK: - 7. A backup without reminders leaves the stored reminders alone
-
-    func testBackupSettingsWithoutRemindersDecodeAsNil() throws {
-        let settingsJSON: [String: Any] = [
-            "phaseColors": ["#111111", "#222222", "#333333", "#444444"],
-            "notificationsEnabled": true, "notifyDayBefore": false, "notifyDayOf": true,
-            "fertileStartOn": false, "fertileOvulationOn": true,
-            "trackingMode": "cycle", "defaultModeOnLaunch": "last", "themeID": "default"
-        ]
-        let data = try JSONSerialization.data(withJSONObject: settingsJSON)
-        let decoded = try JSONDecoder().decode(BackupSettings.self, from: data)
-        XCTAssertNil(decoded.reminders, "absent reminders are unknown, not an empty list")
-
-        var withJunk = settingsJSON
-        withJunk["reminders"] = ["old placeholder"]
-        let junk = try JSONDecoder().decode(BackupSettings.self, from: try JSONSerialization.data(withJSONObject: withJunk))
-        XCTAssertNil(junk.reminders, "undecodable reminders are unknown too")
-    }
-
-    func testReplaceWithoutRemindersKeepsStoredReminders() {
-        let saved = UserDefaults.standard.data(forKey: ReminderStore.key)
-        defer { UserDefaults.standard.set(saved, forKey: ReminderStore.key) }
-        let mine = [LoggingReminder(title: "Mine", hour: 9, minute: 0, category: .symptom, mode: .cycle, isOn: true)]
-        ReminderStore.save(mine)
-        let settings = AppSettings()
-        let before = settings.settingsSnapshot()
-        var incoming = before
-        incoming.reminders = nil
-
-        settings.apply(incoming)
-        XCTAssertEqual(ReminderStore.load(), mine, "a file with no reminders leaves the list alone")
-
-        incoming.reminders = []
-        settings.apply(incoming)
-        XCTAssertEqual(ReminderStore.load(), [], "an explicit empty list still clears it")
-        settings.apply(before)
-    }
-
     // MARK: - 8. A cold-launch notification tap is kept until the tab view appears
 
     func testColdLaunchTapIsKeptUntilConsumed() {

@@ -57,6 +57,26 @@ enum ExportCopy {
     }
 }
 
+// MARK: - Orientation
+
+extension AppSettings {
+    /// The remembered orientation for one export. The calendar starts in landscape, the report in portrait;
+    /// an unknown stored value falls back to that default.
+    func pdfOrientation(for kind: ExportView.Kind) -> PaperSize.Orientation {
+        switch kind {
+        case .calendar: return PaperSize.Orientation(rawValue: calendarPDFOrientation) ?? .landscape
+        case .report:   return PaperSize.Orientation(rawValue: reportPDFOrientation) ?? .portrait
+        }
+    }
+
+    func setPDFOrientation(_ orientation: PaperSize.Orientation, for kind: ExportView.Kind) {
+        switch kind {
+        case .calendar: calendarPDFOrientation = orientation.rawValue
+        case .report:   reportPDFOrientation = orientation.rawValue
+        }
+    }
+}
+
 // MARK: - Share item
 
 /// A rendered PDF handed to `ShareLink`. Data only: nothing is written to disk by the app.
@@ -104,6 +124,8 @@ struct ExportView: View {
     @State private var calendarPDF = Data()
     @State private var reportPDF = Data()
     @State private var preview: UIImage?
+    @State private var pageCount = 1
+    @State private var previewWidth: CGFloat = 0
 
     private let clock = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
 
@@ -112,6 +134,15 @@ struct ExportView: View {
     }
 
     private var gate: ExportGate { ExportGate.state(purchaseStore.entitlement, now: now) }
+
+    private var orientation: PaperSize.Orientation { appSettings.pdfOrientation(for: kind) }
+
+    private var orientationBinding: Binding<PaperSize.Orientation> {
+        Binding(get: { appSettings.pdfOrientation(for: kind) },
+                set: { appSettings.setPDFOrientation($0, for: kind) })
+    }
+
+    private var pageInfo: PDFPageInfo { PDFPageInfo(paper: paper, orientation: orientation) }
 
     var body: some View {
         NavigationStack {
@@ -162,37 +193,51 @@ struct ExportView: View {
 
     private var previewCard: some View {
         VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-            Group {
-                if let preview {
-                    Image(uiImage: preview)
-                        .resizable()
-                        .scaledToFit()
-                        .blur(radius: gate.isUnlocked ? 0 : 9, opaque: true)
-                        .overlay(alignment: .topTrailing) {
-                            if !gate.isUnlocked {
-                                Image(systemName: "lock.fill")
-                                    .font(DS.Font.caption.weight(.semibold))
-                                    .foregroundColor(DS.Color.onAccent)
-                                    .padding(DS.Spacing.sm)
-                                    .background(DS.Color.accent, in: Circle())
-                                    .padding(DS.Spacing.sm)
-                                    .accessibilityHidden(true)
-                            }
-                        }
-                } else {
-                    Rectangle().fill(DS.Color.cardBackground)
-                        .aspectRatio(paper.size.width / paper.size.height, contentMode: .fit)
-                        .overlay(ProgressView())
+            // The sheet is drawn at the page's exact aspect ratio; the rendered page fills it.
+            Color.white
+                .aspectRatio(pageInfo.aspectRatio, contentMode: .fit)
+                .overlay {
+                    if let preview {
+                        Image(uiImage: preview)
+                            .resizable()
+                            .scaledToFit()
+                            .blur(radius: gate.isUnlocked ? 0 : 9, opaque: true)
+                    } else {
+                        ProgressView()
+                    }
+                }
+                .overlay(alignment: .topTrailing) {
+                    if preview != nil, !gate.isUnlocked {
+                        Image(systemName: "lock.fill")
+                            .font(DS.Font.caption.weight(.semibold))
+                            .foregroundColor(DS.Color.onAccent)
+                            .padding(DS.Spacing.sm)
+                            .background(DS.Color.accent, in: Circle())
+                            .padding(DS.Spacing.sm)
+                            .accessibilityHidden(true)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { previewWidth = $0 }
+                .clipShape(RoundedRectangle(cornerRadius: DS.Radius.chip))
+                .overlay(RoundedRectangle(cornerRadius: DS.Radius.chip).strokeBorder(DS.Color.separator, lineWidth: 0.5))
+                .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(previewLabel)
+                .accessibilityValue(gate.isUnlocked ? previewSummary : "")
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("\(pageInfo.label), \(orientation.title.lowercased()) · \(PDFPageInfo.pageCountText(pageCount))")
+                    .font(DS.Font.caption.weight(.semibold))
+                    .foregroundColor(DS.Color.primaryText)
+                if previewWidth > 0 {
+                    Text(pageInfo.scaleHint)
+                        .font(DS.Font.micro)
+                        .foregroundColor(DS.Color.secondaryText)
                 }
             }
-            .frame(maxWidth: .infinity)
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.chip))
-            .overlay(RoundedRectangle(cornerRadius: DS.Radius.chip).strokeBorder(DS.Color.separator, lineWidth: 0.5))
-            .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(previewLabel)
-            .accessibilityValue(gate.isUnlocked ? previewSummary : "")
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityElement(children: .combine)
 
             Text(ExportCopy.previewNote)
                 .font(DS.Font.micro)
@@ -202,7 +247,8 @@ struct ExportView: View {
 
     private var previewLabel: String {
         let document = kind == .calendar ? "the \(month.title) calendar" : "the Doctor Report"
-        return "Preview of \(document) on \(paper.title) paper" + (gate.isUnlocked ? "" : ". Export is locked")
+        return "Preview of \(document), \(pageInfo.label), \(orientation.title.lowercased())"
+            + (gate.isUnlocked ? "" : ". Export is locked")
     }
 
     // MARK: Options
@@ -238,10 +284,14 @@ struct ExportView: View {
 
     private var reportOptions: some View {
         VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-            Text("For the report")
-                .font(DS.Font.sectionHeader)
-                .foregroundColor(DS.Color.primaryText)
-                .accessibilityAddTraits(.isHeader)
+            HStack {
+                Text("For the report")
+                    .font(DS.Font.sectionHeader)
+                    .foregroundColor(DS.Color.primaryText)
+                    .accessibilityAddTraits(.isHeader)
+                Spacer()
+                InfoButton(topic: InfoCopy.exportPrivacy)
+            }
             TextField("Name (optional)", text: $name)
                 .textContentType(.name)
                 .textInputAutocapitalization(.words)
@@ -271,12 +321,22 @@ struct ExportView: View {
         .cardStyle()
     }
 
+    /// Paper and orientation side by side; stacked at accessibility text sizes.
     private var paperPicker: some View {
-        Picker("Paper size", selection: $paper) {
-            ForEach(PaperSize.allCases) { Text($0.title).tag($0) }
+        (dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: DS.Spacing.sm))
+            : AnyLayout(HStackLayout(spacing: DS.Spacing.sm))) {
+            Picker("Paper size", selection: $paper) {
+                ForEach(PaperSize.allCases) { Text($0.title).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .accessibilityLabel("Paper size")
+            Picker("Orientation", selection: orientationBinding) {
+                ForEach(PaperSize.Orientation.allCases) { Text($0.title).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .accessibilityLabel("Orientation")
         }
-        .pickerStyle(.segmented)
-        .accessibilityLabel("Paper size")
     }
 
     // MARK: Gate
@@ -346,9 +406,10 @@ struct ExportView: View {
         let kind: Kind
         let month: Date
         let paper: PaperSize
+        let calendarOrientation: PaperSize.Orientation
+        let reportOrientation: PaperSize.Orientation
         let lightTints: Bool
         let mode: TrackingMode
-        let colors: String
         let eventCount: Int
         let blockCount: Int
         let day: Date
@@ -362,26 +423,30 @@ struct ExportView: View {
     private var fieldKey: FieldKey { FieldKey(name: name, birthDate: includeBirthDate ? birthDate : nil) }
 
     private var renderKey: RenderKey {
-        RenderKey(kind: kind, month: month.monthStart, paper: paper, lightTints: lightTints, mode: appSettings.trackingMode,
-                  colors: appSettings.colorSignature, eventCount: eventStore.events.count,
+        RenderKey(kind: kind, month: month.monthStart, paper: paper,
+                  calendarOrientation: appSettings.pdfOrientation(for: .calendar),
+                  reportOrientation: appSettings.pdfOrientation(for: .report),
+                  lightTints: lightTints, mode: appSettings.trackingMode, eventCount: eventStore.events.count,
                   blockCount: archivedDataStore.archivedBlocks.count, day: now.startOfDay)
     }
 
     /// Renders both PDFs (the unlocked card offers both) and the preview of the selected one.
     private func render() {
-        let colors = Event.EventType.allCases.map { appSettings.phaseColor(for: $0) }
         calendarPDF = CalendarPDFRenderer(events: eventStore.cycleEvents, archivedBlocks: archivedDataStore.cycleBlocks,
-                                          colors: colors, fertileOverrides: fertileStore.overrides)
-            .render(month: month.monthStart, paper: paper, lightTints: lightTints, today: now)
+                                          fertileOverrides: fertileStore.overrides)
+            .render(month: month.monthStart, paper: paper, orientation: appSettings.pdfOrientation(for: .calendar),
+                    lightTints: lightTints, today: now)
 
         reportPDF = makeReportPDF()
         renderedFields = fieldKey
 
         let data = kind == .calendar ? calendarPDF : reportPDF
-        if let page = PDFDocument(data: data)?.page(at: 0) {
+        if let document = PDFDocument(data: data), let page = document.page(at: 0) {
+            pageCount = document.pageCount
             previewSummary = String((page.string ?? "").prefix(200))
+            let bounds = page.bounds(for: .mediaBox)
             let width: CGFloat = 1200
-            preview = page.thumbnail(of: CGSize(width: width, height: width * paper.size.height / paper.size.width), for: .mediaBox)
+            preview = page.thumbnail(of: CGSize(width: width, height: width * bounds.height / bounds.width), for: .mediaBox)
         }
     }
 
@@ -395,7 +460,8 @@ struct ExportView: View {
         let report = DoctorReportBuilder.make(events: events, archivedBlocks: blocks, mode: mode, today: now)
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         return DoctorReportPDFRenderer(today: now)
-            .render(report, paper: paper, name: trimmed.isEmpty ? nil : trimmed, birthDate: includeBirthDate ? birthDate : nil)
+            .render(report, paper: paper, orientation: appSettings.pdfOrientation(for: .report),
+                    name: trimmed.isEmpty ? nil : trimmed, birthDate: includeBirthDate ? birthDate : nil)
     }
 }
 

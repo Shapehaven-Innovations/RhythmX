@@ -16,6 +16,8 @@ struct BackupPayload: Codable {
 }
 
 struct BackupSettings: Codable, Equatable {
+    /// Kept in the format so every file still decodes. Written as the fixed defaults and never applied:
+    /// phase colors are fixed since 2.0, so custom colors in older files are ignored on restore.
     var phaseColors: [String]
     var notificationsEnabled: Bool
     var notifyDayBefore: Bool
@@ -25,17 +27,22 @@ struct BackupSettings: Codable, Equatable {
     var trackingMode: String
     var defaultModeOnLaunch: String
     var themeID: String
-    /// Nil when the file carried no readable reminder list; a restore then leaves the stored list alone.
-    var reminders: [LoggingReminder]?
-    var dailyCheckIn: CheckInSetting?
     var weeklyCheckIn: CheckInSetting?
+    /// Daily insights. Nil in files written before it existed; a restore then leaves the device's setting alone.
+    var dailyInsightsOn: Bool?
+    var dailyInsightsHour: Int?
+    var dailyInsightsMinute: Int?
+    var dailyInsightsDiscreet: Bool?
 }
 
 extension BackupSettings {
-    /// Format 1 files written before 2.0 shipped carried `reminders` as `[String]` and the check-ins as
-    /// `String?`. Those three are read leniently: anything that is not the current shape reads as absent
-    /// (nil), so such a file still opens and a restore does not clear what the device has. Every other
-    /// field decodes as synthesized; encoding is synthesized.
+    /// Earlier 2.0 builds also wrote `reminders` (tag reminders) and `dailyCheckIn`, both replaced by Daily
+    /// insights. Those keys are no longer read or written: such a file still opens, and a restore never
+    /// re-creates tag reminders or the daily check-in. The format stays 1, since every remaining field reads
+    /// the same. Files written before 2.0 shipped carried `weeklyCheckIn` as `String?`; it and the Daily
+    /// insights fields are read leniently, so anything that is not the current shape reads as absent (nil)
+    /// and a restore does not clear what the device has. Every other field decodes as synthesized; encoding
+    /// is synthesized and leaves nil fields out.
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         phaseColors = try c.decode([String].self, forKey: .phaseColors)
@@ -47,9 +54,11 @@ extension BackupSettings {
         trackingMode = try c.decode(String.self, forKey: .trackingMode)
         defaultModeOnLaunch = try c.decode(String.self, forKey: .defaultModeOnLaunch)
         themeID = try c.decode(String.self, forKey: .themeID)
-        reminders = (try? c.decodeIfPresent([LoggingReminder].self, forKey: .reminders)) ?? nil
-        dailyCheckIn = (try? c.decodeIfPresent(CheckInSetting.self, forKey: .dailyCheckIn)) ?? nil
         weeklyCheckIn = (try? c.decodeIfPresent(CheckInSetting.self, forKey: .weeklyCheckIn)) ?? nil
+        dailyInsightsOn = (try? c.decodeIfPresent(Bool.self, forKey: .dailyInsightsOn)) ?? nil
+        dailyInsightsHour = (try? c.decodeIfPresent(Int.self, forKey: .dailyInsightsHour)) ?? nil
+        dailyInsightsMinute = (try? c.decodeIfPresent(Int.self, forKey: .dailyInsightsMinute)) ?? nil
+        dailyInsightsDiscreet = (try? c.decodeIfPresent(Bool.self, forKey: .dailyInsightsDiscreet)) ?? nil
     }
 }
 

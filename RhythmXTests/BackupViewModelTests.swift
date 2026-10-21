@@ -226,14 +226,15 @@ final class BackupViewModelTests: XCTestCase {
             phoneEvents: [Event(id: "old", eventType: .luteal, date: base, note: "phone")],
             safetyDirectory: blocker.appendingPathComponent("Backup", isDirectory: true)
         )
-        settings.phaseColor1 = "#ABCDEF"
+        settings.notifyDayBefore.toggle()
+        let changedSetting = settings.notifyDayBefore
 
         XCTAssertThrowsError(try model.restore(.replace)) { error in
             XCTAssertEqual(error as? BackupViewModel.RestoreError, .safetyCopyFailed)
         }
         XCTAssertEqual(events.events.map(\.id), ["old"])
         XCTAssertEqual(events.events.first?.note, "phone")
-        XCTAssertEqual(settings.phaseColor1, "#ABCDEF")
+        XCTAssertEqual(settings.notifyDayBefore, changedSetting, "settings are left as they were")
         XCTAssertEqual(BackupViewModel.message(for: BackupViewModel.RestoreError.safetyCopyFailed),
                        "A safety copy of your current data could not be saved, so nothing was replaced. Your data has not changed.")
 

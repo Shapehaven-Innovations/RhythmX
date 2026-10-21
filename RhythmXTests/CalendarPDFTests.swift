@@ -3,7 +3,7 @@ import SwiftUI
 import XCTest
 @testable import RhythmX
 
-/// Task 13: the printable monthly calendar PDF. One page, locale paper size, moon logo mark and no app name.
+/// Task 13: the printable monthly calendar PDF. One page, locale paper size, the app icon image and no app name.
 @MainActor
 final class CalendarPDFTests: XCTestCase {
     private let calendar = Calendar.current
@@ -15,12 +15,8 @@ final class CalendarPDFTests: XCTestCase {
         calendar.date(from: DateComponents(year: year, month: month, day: day))!
     }
 
-    private var colors: [Color] {
-        Event.EventType.allCases.map { $0.defaultPhaseColor }
-    }
-
     private func renderer(events: [Event] = [], blocks: [ArchivedDataBlock] = []) -> CalendarPDFRenderer {
-        CalendarPDFRenderer(events: events, archivedBlocks: blocks, colors: colors)
+        CalendarPDFRenderer(events: events, archivedBlocks: blocks)
     }
 
     private func document(_ data: Data) throws -> PDFDocument {
@@ -69,7 +65,7 @@ final class CalendarPDFTests: XCTestCase {
         monday.firstWeekday = 2
         let august = monday.date(from: DateComponents(year: 2026, month: 8, day: 1))!
         let events = CycleGenerator.events(startDate: monday.date(from: DateComponents(year: 2026, month: 8, day: 3))!, cycleLength: 28)
-        let pdf = CalendarPDFRenderer(events: events, archivedBlocks: [], colors: colors, calendar: monday)
+        let pdf = CalendarPDFRenderer(events: events, archivedBlocks: [], calendar: monday)
         for paper in PaperSize.allCases {
             let data = pdf.render(month: august, paper: paper, lightTints: false, today: august)
             XCTAssertEqual(try document(data).pageCount, 1, "\(paper)")
@@ -138,22 +134,51 @@ final class CalendarPDFTests: XCTestCase {
         XCTAssertEqual(predicted.count, 5)
     }
 
-    // MARK: - Logo mark
+    // MARK: - App icon
 
-    func testMoonLogoMarkDrawsIntoAContext() {
+    /// The header logo is the real app icon (the `ExportLogo` image set, a copy of the 1024 px icon),
+    /// drawn as an image with rounded corners. It is an image, so it adds no text to the page.
+    func testExportLogoImageLoadsByName() throws {
+        let image = try XCTUnwrap(PDFDrawing.appIconImage, "ExportLogo is in the asset catalog")
+        XCTAssertGreaterThanOrEqual(image.size.width * image.scale, 512)
+    }
+
+    func testAppIconDrawsWithRoundedCorners() {
         let format = UIGraphicsImageRendererFormat()
         format.scale = 2
+        format.opaque = false
         let image = UIGraphicsImageRenderer(size: CGSize(width: 40, height: 40), format: format).image { ctx in
-            MoonLogoMark.draw(in: ctx.cgContext, rect: CGRect(x: 0, y: 0, width: 40, height: 40), color: .black)
+            XCTAssertTrue(PDFDrawing.drawAppIcon(in: ctx.cgContext, rect: CGRect(x: 0, y: 0, width: 40, height: 40)))
         }
-        XCTAssertEqual(image.size, CGSize(width: 40, height: 40))
-        // The ring and the crescent leave ink; a blank image would mean the mark drew nothing.
-        XCTAssertTrue(CalendarPDFTests.hasInk(image), "the moon mark draws visible ink")
+        XCTAssertTrue(CalendarPDFTests.hasInk(image), "the icon draws visible ink")
+        XCTAssertEqual(CalendarPDFTests.alpha(image, x: 0, y: 0), 0, "the corner is clipped away")
+        XCTAssertEqual(CalendarPDFTests.alpha(image, x: 40, y: 40), 255, "the middle is solid icon art")
+    }
+
+    func testCalendarPageCarriesTheIconAsAnImage() throws {
+        let data = renderer().render(month: october, paper: .letter, lightTints: false, today: today)
+        XCTAssertTrue(CalendarPDFTests.containsImageXObject(data), "the page draws the app icon image")
+        XCTAssertEqual(try document(data).pageCount, 1)
+    }
+
+    static func containsImageXObject(_ data: Data) -> Bool {
+        data.range(of: Data("/Subtype /Image".utf8)) != nil
+    }
+
+    private static func alpha(_ image: UIImage, x: Int, y: Int) -> UInt8? {
+        guard let cg = image.cgImage else { return nil }
+        let width = cg.width, height = cg.height
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        guard let ctx = CGContext(data: &pixels, width: width, height: height, bitsPerComponent: 8,
+                                  bytesPerRow: width * 4, space: CGColorSpaceCreateDeviceRGB(),
+                                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
+        ctx.draw(cg, in: CGRect(x: 0, y: 0, width: width, height: height))
+        return pixels[(min(y, height - 1) * width + min(x, width - 1)) * 4 + 3]
     }
 
     // MARK: - Review samples
 
-    /// Writes Letter and A4 samples of both PDFs for a human to look at. Runs only when the test runner has
+    /// Writes Letter and A4, portrait and landscape samples of both PDFs for a human to look at. Runs only when the test runner has
     /// `RHYTHMX_PDF_SAMPLE_DIR` (pass it as `TEST_RUNNER_RHYTHMX_PDF_SAMPLE_DIR=<dir>` to xcodebuild).
     func testWritesSamplePDFsForReview() throws {
         guard let dir = ProcessInfo.processInfo.environment["RHYTHMX_PDF_SAMPLE_DIR"], !dir.isEmpty else {
@@ -175,7 +200,7 @@ final class CalendarPDFTests: XCTestCase {
                       block(start: date(2026, 8, 15), length: 28, tags: "Symptom:Cramps, Symptom:Back Pain")]
         var current = CycleGenerator.events(startDate: date(2026, 10, 3), cycleLength: 28)
         current[0].tags = "Symptom:Cramps"
-        let calendarRenderer = CalendarPDFRenderer(events: current, archivedBlocks: blocks, colors: colors)
+        let calendarRenderer = CalendarPDFRenderer(events: current, archivedBlocks: blocks)
         let report = DoctorReportBuilder.make(events: current, archivedBlocks: blocks, mode: .cycle, today: today)
         let menopauseEvents = [Event(eventType: .menstrual, date: date(2026, 2, 14), note: "")] + (0..<40).map { offset in
             Event(eventType: .follicular, date: calendar.date(byAdding: .day, value: -offset, to: today)!, note: "",
@@ -186,18 +211,29 @@ final class CalendarPDFTests: XCTestCase {
         let sparse = DoctorReportBuilder.make(events: current, archivedBlocks: [blocks[0]], mode: .cycle, today: today)
         let reportRenderer = DoctorReportPDFRenderer(today: today)
 
+        // A six-row month on a Monday-first calendar.
+        var monday = Calendar(identifier: .gregorian)
+        monday.firstWeekday = 2
+        let august = monday.date(from: DateComponents(year: 2026, month: 8, day: 1))!
+        let sixRows = CalendarPDFRenderer(events: CycleGenerator.events(startDate: date(2026, 8, 3), cycleLength: 28),
+                                          archivedBlocks: [], calendar: monday)
+
         for paper in PaperSize.allCases {
-            let name = paper.rawValue
-            try calendarRenderer.render(month: october, paper: paper, lightTints: false, today: today)
-                .write(to: folder.appendingPathComponent("calendar-\(name).pdf"))
-            try calendarRenderer.render(month: october, paper: paper, lightTints: true, today: today)
-                .write(to: folder.appendingPathComponent("calendar-\(name)-light-tints.pdf"))
-            try reportRenderer.render(report, paper: paper, name: "Jane Example", birthDate: date(1988, 4, 23))
-                .write(to: folder.appendingPathComponent("report-\(name).pdf"))
-            try reportRenderer.render(menopause, paper: paper, name: nil, birthDate: nil)
-                .write(to: folder.appendingPathComponent("report-menopause-\(name).pdf"))
-            try reportRenderer.render(sparse, paper: paper, name: nil, birthDate: nil)
-                .write(to: folder.appendingPathComponent("report-sparse-\(name).pdf"))
+            for orientation in PaperSize.Orientation.allCases {
+                let name = "\(paper.rawValue)-\(orientation.rawValue)"
+                try calendarRenderer.render(month: october, paper: paper, orientation: orientation, lightTints: false, today: today)
+                    .write(to: folder.appendingPathComponent("calendar-\(name).pdf"))
+                try calendarRenderer.render(month: october, paper: paper, orientation: orientation, lightTints: true, today: today)
+                    .write(to: folder.appendingPathComponent("calendar-\(name)-light-tints.pdf"))
+                try sixRows.render(month: august, paper: paper, orientation: orientation, lightTints: false, today: august)
+                    .write(to: folder.appendingPathComponent("calendar-six-rows-monday-\(name).pdf"))
+                try reportRenderer.render(report, paper: paper, orientation: orientation, name: "Jane Example", birthDate: date(1988, 4, 23))
+                    .write(to: folder.appendingPathComponent("report-\(name).pdf"))
+                try reportRenderer.render(menopause, paper: paper, orientation: orientation, name: nil, birthDate: nil)
+                    .write(to: folder.appendingPathComponent("report-menopause-\(name).pdf"))
+                try reportRenderer.render(sparse, paper: paper, orientation: orientation, name: nil, birthDate: nil)
+                    .write(to: folder.appendingPathComponent("report-sparse-\(name).pdf"))
+            }
         }
     }
 

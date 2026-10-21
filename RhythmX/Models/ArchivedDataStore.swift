@@ -192,6 +192,7 @@ class ArchivedDataStore: ObservableObject {
                         didUpdate = true
                         var newEvent = event
                         newEvent.tags = newTags
+                        newEvent.pruneIntensities()
                         return newEvent
                     }
                     return event

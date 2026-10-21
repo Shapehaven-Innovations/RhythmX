@@ -5,6 +5,7 @@
 
 import SwiftUI
 import UniformTypeIdentifiers
+import UserNotifications
 
 extension UTType {
     /// Declared in Info.plist under UTExportedTypeDeclarations.
@@ -61,6 +62,8 @@ final class BackupViewModel: ObservableObject {
     private let appVersion: String
     private let iterations: Int
     private let now: () -> Date
+    /// Whether iOS allows RhythmX notifications; tests pass a fake.
+    private let isAuthorized: () async -> Bool
 
     init(
         events: EventStore,
@@ -71,7 +74,8 @@ final class BackupViewModel: ObservableObject {
         safetyDirectory: URL? = SafetyCopies.defaultDirectory,
         appVersion: String = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown",
         iterations: Int = BackupCrypto.defaultIterations,
-        now: @escaping () -> Date = Date.init
+        now: @escaping () -> Date = Date.init,
+        isAuthorized: @escaping () async -> Bool = { await UNUserNotificationCenter.current().isAuthorizedForInsights() }
     ) {
         self.events = events
         self.archived = archived
@@ -82,6 +86,7 @@ final class BackupViewModel: ObservableObject {
         self.appVersion = appVersion
         self.iterations = iterations
         self.now = now
+        self.isAuthorized = isAuthorized
         self.lastBackupDate = defaults.object(forKey: Self.lastBackupDateKey) as? Date
     }
 
@@ -249,8 +254,41 @@ final class BackupViewModel: ObservableObject {
         }
     }
 
-    /// Same scheduling path SettingsView uses for cycle reminders.
+    /// After a restore: turns Daily insights back off when iOS does not allow notifications (true when it did),
+    /// otherwise reschedules its notes from the restored settings.
+    func confirmNotificationAccess() async -> Bool {
+        let turnedOff = await BackupService.checkDailyInsightsAccess(settings: settings, isAuthorized: isAuthorized)
+        DailyInsightsCoordinator.shared.update(write: settings.dailyInsightsOn)
+        return turnedOff
+    }
+
+    /// The message after a restore.
+    static func doneMessage(mode: RestoreMode, result: RestoreResult, dailyInsightsTurnedOff: Bool) -> String {
+        func countText(_ count: Int, _ singular: String, _ plural: String) -> String {
+            "\(count) \(count == 1 ? singular : plural)"
+        }
+        var text: String
+        switch mode {
+        case .merge:
+            if result.eventsAdded == 0 && result.blocksAdded == 0 && result.eventsUpdated == 0 {
+                text = "Everything in this file was already on this phone. Nothing was added."
+            } else {
+                text = "Added \(countText(result.eventsAdded, "entry", "entries")) and \(countText(result.blocksAdded, "cycle", "cycles"))."
+                if result.eventsUpdated > 0 {
+                    text += " Tags from the file were added to \(countText(result.eventsUpdated, "entry", "entries")) already on this phone."
+                }
+            }
+        case .replace:
+            text = "Your data now matches the file: \(countText(result.eventsAdded, "entry", "entries")) and \(countText(result.blocksAdded, "cycle", "cycles")). Changed your mind? Open Backup to go back to the copy saved before this restore."
+        }
+        if dailyInsightsTurnedOff { text += " " + BackupService.dailyInsightsOffNote }
+        return text
+    }
+
+    /// Same scheduling path SettingsView uses for cycle reminders, plus the weekly review (its text follows
+    /// Lock Screen privacy, which a Replace restore may have changed).
     private func rescheduleNotifications() {
+        NotificationScheduler.scheduleCheckIns(weekly: settings.weeklyCheckIn)
         guard settings.notificationsEnabled else {
             NotificationScheduler.cancelAllCycleReminders()
             return
@@ -804,24 +842,13 @@ struct RestoreView: View {
         }
         restoreError = nil
         if result.eventsAdded > 0 { didFinishOnboarding = true }
-        switch mode {
-        case .merge:
-            if result.eventsAdded == 0 && result.blocksAdded == 0 && result.eventsUpdated == 0 {
-                stage = .done("Everything in this file was already on this phone. Nothing was added.")
-            } else {
-                var text = "Added \(countText(result.eventsAdded, "entry", "entries")) and \(countText(result.blocksAdded, "cycle", "cycles"))."
-                if result.eventsUpdated > 0 {
-                    text += " Tags from the file were added to \(countText(result.eventsUpdated, "entry", "entries")) already on this phone."
-                }
-                stage = .done(text)
+        stage = .done(BackupViewModel.doneMessage(mode: mode, result: result, dailyInsightsTurnedOff: false))
+        Task {
+            // A restored Daily insights switch that iOS cannot fire goes back off, and the message says so.
+            if await model.confirmNotificationAccess() {
+                stage = .done(BackupViewModel.doneMessage(mode: mode, result: result, dailyInsightsTurnedOff: true))
             }
-        case .replace:
-            stage = .done("Your data now matches the file: \(countText(result.eventsAdded, "entry", "entries")) and \(countText(result.blocksAdded, "cycle", "cycles")). Changed your mind? Open Backup to go back to the copy saved before this restore.")
         }
-    }
-
-    private func countText(_ count: Int, _ singular: String, _ plural: String) -> String {
-        "\(count) \(count == 1 ? singular : plural)"
     }
 }
 

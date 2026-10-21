@@ -64,6 +64,20 @@ enum BackupService {
         }
     }
 
+    /// Added to the restore message when the file turned Daily insights on but iOS does not allow notifications.
+    static let dailyInsightsOffNote = "Daily insights was on in the file, but notifications are off for RhythmX, so it is off for now. You can allow notifications in iPhone Settings and turn it on in Notifications."
+
+    /// After a restore: Daily insights on without notification permission could never fire, so it is turned
+    /// back off. Returns true when it was turned off. Nothing is asked while the switch is off.
+    static func checkDailyInsightsAccess(settings: AppSettings, isAuthorized: () async -> Bool) async -> Bool {
+        guard settings.dailyInsightsOn else { return false }
+        guard await isAuthorized() else {
+            settings.dailyInsightsOn = false
+            return true
+        }
+        return false
+    }
+
     /// Counts and date range shown before the user picks Merge or Replace.
     /// The range covers current events and the events inside archived cycles.
     static func preview(_ payload: BackupPayload) -> BackupPreview {
@@ -84,7 +98,9 @@ extension AppSettings {
     /// The settings that go into a backup. Purchases are not settings and are never included.
     func settingsSnapshot() -> BackupSettings {
         BackupSettings(
-            phaseColors: [phaseColor1, phaseColor2, phaseColor3, phaseColor4],
+            // Phase colors are fixed since 2.0. The field stays in the format so older readers still open the
+            // file; it always carries the fixed defaults.
+            phaseColors: AppSettings.phaseColorHexes,
             notificationsEnabled: notificationsEnabled,
             notifyDayBefore: notifyDayBefore,
             notifyDayOf: notifyDayOf,
@@ -92,22 +108,18 @@ extension AppSettings {
             fertileOvulationOn: fertileOvulationOn,
             trackingMode: trackingMode.rawValue,
             defaultModeOnLaunch: defaultModeOnLaunch,
-            // themeID is not stored by AppSettings yet; the themes task wires it. Until then it
-            // round-trips as a harmless default and is ignored by `apply(_:)`.
-            themeID: "default",
-            reminders: ReminderStore.load(),
-            dailyCheckIn: dailyCheckIn,
-            weeklyCheckIn: weeklyCheckIn
+            themeID: themeID,
+            weeklyCheckIn: weeklyCheckIn,
+            dailyInsightsOn: dailyInsightsOn,
+            dailyInsightsHour: dailyInsightsHour,
+            dailyInsightsMinute: dailyInsightsMinute,
+            dailyInsightsDiscreet: dailyInsightsDiscreet
         )
     }
 
     /// Overwrites the settings AppSettings currently stores. Used only by Replace.
     func apply(_ settings: BackupSettings) {
-        let colors = settings.phaseColors
-        if colors.count > 0 { phaseColor1 = colors[0] }
-        if colors.count > 1 { phaseColor2 = colors[1] }
-        if colors.count > 2 { phaseColor3 = colors[2] }
-        if colors.count > 3 { phaseColor4 = colors[3] }
+        // `phaseColors` is ignored: phase colors are fixed, and custom colors in 1.9.x files are not restored.
         notificationsEnabled = settings.notificationsEnabled
         notifyDayBefore = settings.notifyDayBefore
         notifyDayOf = settings.notifyDayOf
@@ -117,10 +129,15 @@ extension AppSettings {
         if settings.defaultModeOnLaunch == "last" || TrackingMode(rawValue: settings.defaultModeOnLaunch) != nil {
             defaultModeOnLaunch = settings.defaultModeOnLaunch
         }
-        // A file with no readable reminder list says nothing about reminders, so the stored list stays.
-        if let reminders = settings.reminders { ReminderStore.save(reminders) }
-        dailyCheckIn = settings.dailyCheckIn
         weeklyCheckIn = settings.weeklyCheckIn
-        // themeID: no AppSettings property yet; the themes task applies it here.
+        // Tag reminders and the daily check-in in older files are never restored (Daily insights replaced
+        // them). A file without Daily insights says nothing about it, so the device's setting stays.
+        if let on = settings.dailyInsightsOn { dailyInsightsOn = on }
+        if let hour = settings.dailyInsightsHour, (0...23).contains(hour) { dailyInsightsHour = hour }
+        if let minute = settings.dailyInsightsMinute, (0...59).contains(minute) { dailyInsightsMinute = minute }
+        if let discreet = settings.dailyInsightsDiscreet { dailyInsightsDiscreet = discreet }
+        // Only a known theme id is applied; files from before themes say "default" and leave the theme alone.
+        // A Plus theme is stored as it is: `DS.Theme.current` still shows Blush while Plus is off.
+        if AppTheme.all.contains(where: { $0.id == settings.themeID }) { themeID = settings.themeID }
     }
 }

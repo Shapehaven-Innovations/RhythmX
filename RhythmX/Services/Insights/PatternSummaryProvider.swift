@@ -2,13 +2,11 @@
 //  The optional on-device summary behind the Patterns segment. Apple's Foundation Models framework
 //  (iOS 26 and later, only where the system model is available) writes a short summary from the
 //  PatternFinder findings. It is given finding sentences and evidence only: never dates, notes or raw
-//  tag strings. The app targets iOS 18, so everything model-related is guarded and the protocol lets
-//  tests use a fake.
+//  tag strings. The system model can be unavailable on a device (Apple Intelligence off or not
+//  supported), so availability is checked at runtime and the protocol lets tests use a fake.
 
 import Foundation
-#if canImport(FoundationModels)
 import FoundationModels
-#endif
 
 protocol PatternSummarizing {
     var isAvailable: Bool { get }
@@ -35,12 +33,31 @@ enum PatternSummaryError: Error, LocalizedError {
 struct PatternSummaryProvider: PatternSummarizing {
     static let onDeviceLabel = "Summary written on this device"
     static let disclaimer = "Not medical advice"
+    static let summaryLimit = 400
 
     static let instructions = """
-    You write a short, friendly summary of patterns a person noticed in her own health log. \
-    Use only the facts listed. Do not add causes, advice, or anything the facts do not say. \
+    You write a short, friendly summary of patterns noticed in the person's own health log. \
+    Address the person as you. Use only the facts listed. Do not add causes, advice, or anything the facts do not say. \
+    Write numbers with digits, and only the numbers in the facts. No dashes, lists, or emoji. \
     Two or three plain sentences. If asked a question the facts cannot answer, say so briefly.
     """
+
+    /// Whether the system model can run now; tests pass a fixed answer.
+    private let availability: () -> Bool
+    /// Runs the model with the instructions and the prompt; tests pass a fake.
+    private let generate: (_ instructions: String, _ prompt: String) async throws -> String
+
+    init(availability: (() -> Bool)? = nil,
+         generate: ((_ instructions: String, _ prompt: String) async throws -> String)? = nil) {
+        self.availability = availability ?? {
+            if case .available = SystemLanguageModel.default.availability { return true }
+            return false
+        }
+        self.generate = generate ?? { instructions, prompt in
+            let session = LanguageModelSession(instructions: instructions)
+            return try await session.respond(to: prompt).content
+        }
+    }
 
     /// The whole prompt: finding sentences with their evidence, then the optional question. Nothing else.
     static func prompt(for findings: [PatternFinding], question: String?) -> String {
@@ -63,26 +80,28 @@ struct PatternSummaryProvider: PatternSummarizing {
         }
     }
 
-    var isAvailable: Bool {
-        #if canImport(FoundationModels)
-        if #available(iOS 26, *) {
-            if case .available = SystemLanguageModel.default.availability { return true }
-        }
-        #endif
-        return false
+    /// The findings as plain sentences, shown when the model's text does not pass the checks.
+    static func plainText(for findings: [PatternFinding]) -> String {
+        findings.map { "\($0.sentence), in \($0.evidence)." }.joined(separator: " ")
     }
 
+    /// The model's text when it passes the same rules as the daily insights (`InsightTextValidator`): no dash,
+    /// markup or emoji, no blocked word the findings do not use, only the findings' tags and numbers, and not
+    /// too long. Otherwise the plain findings.
+    static func checked(_ text: String, findings: [PatternFinding]) -> String {
+        let source = findings.map { "\($0.sentence) \($0.evidence)" }.joined(separator: " ")
+        let labels = Set(findings.map { TagParser.label(for: $0.tag) })
+        let ok = InsightTextValidator.isAcceptable(text, limit: summaryLimit, allowedTagLabels: labels,
+                                                   allowedNumbers: InsightTextValidator.numbers(in: source),
+                                                   sourceText: source)
+        return ok ? text.trimmingCharacters(in: .whitespacesAndNewlines) : plainText(for: findings)
+    }
+
+    var isAvailable: Bool { availability() }
+
     func summarize(_ findings: [PatternFinding], question: String?) async throws -> String {
-        #if canImport(FoundationModels)
-        if #available(iOS 26, *) {
-            guard case .available = SystemLanguageModel.default.availability else {
-                throw PatternSummaryError.unavailable
-            }
-            let session = LanguageModelSession(instructions: Self.instructions)
-            let response = try await session.respond(to: Self.prompt(for: findings, question: question))
-            return response.content.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-        #endif
-        throw PatternSummaryError.unavailable
+        guard availability() else { throw PatternSummaryError.unavailable }
+        let raw = try await generate(Self.instructions, Self.prompt(for: findings, question: question))
+        return Self.checked(raw, findings: findings)
     }
 }

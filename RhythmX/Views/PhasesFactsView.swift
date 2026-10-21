@@ -15,6 +15,14 @@ struct PhasesFactsView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: DS.Spacing.md) {
+                if let guide = ModeGuideContent.guide(for: appSettings.trackingMode) {
+                    ModeGuideSection(guide: guide)
+                    Text("Cycle phases")
+                        .font(DS.Font.sectionHeader).foregroundColor(DS.Color.primaryText)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, DS.Spacing.sm)
+                        .accessibilityAddTraits(.isHeader)
+                }
                 HStack {
                     ForEach(Event.EventType.allCases) { phase in
                         Button { if reduceMotion { selected = phase } else { withAnimation { selected = phase } } } label: {
@@ -75,6 +83,55 @@ struct PhasesFactsView: View {
             Text(.init("**\(key):**\(value)")).font(DS.Font.body)
         } else {
             Text(line).font(DS.Font.body)
+        }
+    }
+}
+
+/// Planning or Menopause: the mode label, an intro, and one card per topic with the tags to log for it.
+private struct ModeGuideSection: View {
+    let guide: ModeGuide
+
+    var body: some View {
+        VStack(spacing: DS.Spacing.md) {
+            VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+                Label(guide.modeLabel, systemImage: guide.mode == .planning ? TagCategory.planning.symbolName : TagCategory.menopause.symbolName)
+                    .font(DS.Font.caption.weight(.semibold))
+                    .foregroundColor(DS.Color.onAccent)
+                    .padding(.horizontal, DS.Spacing.sm).padding(.vertical, DS.Spacing.xs)
+                    .background(Capsule().fill(DS.Color.accent))
+                Text(guide.title).font(DS.Font.displayTitle).foregroundColor(DS.Color.primaryText)
+                    .accessibilityAddTraits(.isHeader)
+                Text(guide.intro).font(DS.Font.body).foregroundColor(DS.Color.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .cardStyle()
+
+            ForEach(guide.topics) { topic in
+                VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+                    Label(topic.title, systemImage: topic.symbolName)
+                        .font(DS.Font.sectionHeader).foregroundColor(DS.Color.primaryText)
+                        .accessibilityAddTraits(.isHeader)
+                    Text(topic.text).font(DS.Font.body).foregroundColor(DS.Color.primaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("Suggested tags").font(DS.Font.caption.weight(.semibold)).foregroundColor(DS.Color.secondaryText)
+                    FlowLayout(spacing: DS.Spacing.sm) {
+                        ForEach(topic.tags, id: \.self) { tag in
+                            Label(tag.value, systemImage: tag.category.symbolName)
+                                .font(DS.Font.caption.weight(.medium))
+                                .foregroundColor(DS.Color.accent)
+                                .padding(.horizontal, DS.Spacing.sm).padding(.vertical, 6)
+                                .background(Capsule().fill(DS.Color.accent.opacity(0.10)))
+                                .accessibilityLabel("\(tag.value), under \(tag.category.rawValue)")
+                        }
+                    }
+                }
+                .cardStyle()
+            }
+
+            Text(guide.disclaimer)
+                .font(DS.Font.caption).foregroundColor(DS.Color.secondaryText)
+                .frame(maxWidth: .infinity)
+                .multilineTextAlignment(.center)
         }
     }
 }

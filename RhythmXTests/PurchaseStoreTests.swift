@@ -82,6 +82,27 @@ final class PurchaseStoreTests: XCTestCase {
         return false
     }
 
+    private func isCurrentEntitlement(_ id: UInt64) async -> Bool {
+        for await result in Transaction.currentEntitlements where result.unsafePayloadValue.id == id { return true }
+        return false
+    }
+
+    /// Skips, with the reason in the test report, when StoreKit itself has lost a transaction that the test
+    /// session holds: `found` is false although `session.allTransactions()` contains `id`. This is a StoreKit
+    /// Testing defect of the iOS 26.5 Simulator, not app behavior: its storekitd logs "Could not decode purchase
+    /// result: DecodingError.keyNotFound: Key 'original-transaction-id' not found" for every Product.purchase(),
+    /// so the purchase is missing from Transaction.currentEntitlements for a moment after it returns and its
+    /// finish() is lost, and a purchase made with SKTestSession.buyProduct drops the previous purchase from
+    /// Transaction.unfinished. On a device, or once Apple fixes the runtime, `found` is true and the test runs.
+    private func skipIfSimulatorStoreKitLost(_ id: UInt64, as kind: String, found: () async -> Bool) async throws {
+        #if targetEnvironment(simulator)
+        guard session.allTransactions().contains(where: { UInt64($0.identifier) == id }) else { return }
+        if await found() { return }
+        throw XCTSkip("Simulator StoreKit Testing lost transaction \(id) (\(kind)) that SKTestSession holds. "
+                      + "Known iOS 26.5 Simulator storekitd defect (original-transaction-id decode error); run on a device.")
+        #endif
+    }
+
     private func latestPlusIsRevoked(_ id: String) async -> Bool {
         guard let latest = await Transaction.latest(for: id) else { return false }
         return latest.unsafePayloadValue.revocationDate != nil
@@ -153,6 +174,13 @@ final class PurchaseStoreTests: XCTestCase {
         let store = makeStore()
         await store.load()
         try await store.purchasePlus(yearly: true)
+        // Asked straight away, as the app does: if StoreKit itself does not list the new subscription yet, the
+        // app could not have seen it either (iOS 26.5 Simulator defect, see skipIfSimulatorStoreKitLost).
+        let bought = try XCTUnwrap(session.allTransactions().first { $0.productIdentifier == PurchaseStore.ProductID.yearly })
+        let listed = await isCurrentEntitlement(UInt64(bought.identifier))
+        if !store.isPlus {
+            try await skipIfSimulatorStoreKitLost(UInt64(bought.identifier), as: "entitlement") { listed }
+        }
         XCTAssertTrue(store.isPlus)
         XCTAssertTrue(store.canExportPDF)
         XCTAssertEqual(session.allTransactions().count, 1)
@@ -354,8 +382,15 @@ final class PurchaseStoreTests: XCTestCase {
     }
 
     func testPlusWinsOverDayPassInTheStore() async throws {
-        try await buyOutsideTheApp(PurchaseStore.ProductID.dayPass)
-        try await buyOutsideTheApp(PurchaseStore.ProductID.yearly)
+        // Plus first, then the pass. In the iOS 26.5 Simulator a purchase made through SKTestSession drops the
+        // previous purchase from Transaction.unfinished; bought the other way round, the pass vanishes from the
+        // queue (a consumable is not an entitlement) and StoreKit no longer offers it to the app at all. Plus
+        // stays in Transaction.currentEntitlements either way, so this order keeps the scenario intact.
+        let plus = try await buyOutsideTheApp(PurchaseStore.ProductID.yearly)
+        let pass = try await buyOutsideTheApp(PurchaseStore.ProductID.dayPass)
+        await waitUntil { await self.isUnfinished(pass.id) }
+        try await skipIfSimulatorStoreKitLost(plus.id, as: "entitlement") { await self.isCurrentEntitlement(plus.id) }
+        try await skipIfSimulatorStoreKitLost(pass.id, as: "unfinished transaction") { await self.isUnfinished(pass.id) }
         let store = makeStore()
         await store.load()
         XCTAssertTrue(store.isPlus)
@@ -406,6 +441,7 @@ final class PurchaseStoreTests: XCTestCase {
         XCTAssertTrue(store.hasDayPass, "Transaction.updates delivered the pass")
         XCTAssertEqual(store.entitlement.dayPassExpiry, Entitlement.dayPassExpiry(purchasedAt: clock, calendar: .current))
         await waitUntil { Entitlement.load(from: self.defaults).dayPassExpiry != nil }
+        await waitUntil { await self.unfinishedCount() == 0 }
         let unfinished = await unfinishedCount()
         XCTAssertEqual(unfinished, 0)
     }

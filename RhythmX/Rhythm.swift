@@ -36,7 +36,12 @@ struct AppEntry: App {
         )
         SafetyCopies.prune()
         BackupViewModel.clearExports()   // a backup export left over from a previous run
-        NotificationTapRouter.install()  // notification taps open the tag form or the Tags tab (StartTabView)
+        NotificationTapRouter.install()  // notification taps open the quick log or the Tags tab (StartTabView)
+        // First launch of the build with Daily insights: tag reminders and the daily check-in are cancelled
+        // and their stored settings deleted, once.
+        if !AppEntry.isRunningTests {
+            Task { await NotificationMigration.runIfNeeded() }
+        }
     }
 
     var body: some Scene {
@@ -88,6 +93,8 @@ struct AppEntry: App {
                             await purchaseStore.refreshEntitlements()
                             await reconcileCalendar()
                         }
+                        // The next Daily insights note is written each time the app comes back (when it is on).
+                        if appSettings.dailyInsightsOn { DailyInsightsCoordinator.shared.update(write: true) }
                     }
                 }
             }
@@ -102,6 +109,12 @@ struct AppEntry: App {
                 // confirmed lapse past grace remove the app's events once and turn the switch off.
                 await reconcileCalendar()
             }
+        }
+        // Daily insights: the background app refresh requested about three hours before the chosen time
+        // (`DailyInsightsBackground`). SwiftUI registers the identifier at launch and cancels the task when its
+        // time runs out; the template note already scheduled then stays.
+        .backgroundTask(.appRefresh(DailyInsightsBackground.taskIdentifier)) {
+            await DailyInsightsBackground.handle()
         }
     }
 

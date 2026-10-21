@@ -10,6 +10,7 @@ enum DS {
     /// store); the widget extension keeps `Entitlement.plusGrace`, since it only has the cached expiry.
     enum Theme {
         static let storageKey = "themeID"
+        /// The accent wash 1.x drew behind the large title. Kept for the theme tests; the page now uses the Phase Aura.
         static let washOpacity = 0.14
 
         static let plusGrace: TimeInterval =
@@ -40,26 +41,12 @@ enum DS {
             light: (140, 124, 166), dark: (112,  95, 138)
         )
 
-        static var phase1: SwiftUI.Color {
-            guard let hex = AppGroup.defaults.string(forKey: "phaseColor1"),
-                  let c = SwiftUI.Color(hex: hex) else { return phase1Default }
-            return c
-        }
-        static var phase2: SwiftUI.Color {
-            guard let hex = AppGroup.defaults.string(forKey: "phaseColor2"),
-                  let c = SwiftUI.Color(hex: hex) else { return phase2Default }
-            return c
-        }
-        static var phase3: SwiftUI.Color {
-            guard let hex = AppGroup.defaults.string(forKey: "phaseColor3"),
-                  let c = SwiftUI.Color(hex: hex) else { return phase3Default }
-            return c
-        }
-        static var phase4: SwiftUI.Color {
-            guard let hex = AppGroup.defaults.string(forKey: "phaseColor4"),
-                  let c = SwiftUI.Color(hex: hex) else { return phase4Default }
-            return c
-        }
+        // The phase colors are fixed: custom colors stored by 1.9.x under `phaseColor1`...`phaseColor4` are
+        // never read.
+        static var phase1: SwiftUI.Color { phase1Default }
+        static var phase2: SwiftUI.Color { phase2Default }
+        static var phase3: SwiftUI.Color { phase3Default }
+        static var phase4: SwiftUI.Color { phase4Default }
 
         // Theme palette (page, card, accent, moon, waves). Resolved on every read through `DS.Theme.current`,
         // so a view that redraws after the theme or the entitlement changes picks the new colours up.
@@ -74,11 +61,6 @@ enum DS {
         static var waveBack: SwiftUI.Color  { themed(\.waveBack) }
         static var waveMid: SwiftUI.Color   { themed(\.waveMid) }
         static var waveFront: SwiftUI.Color { themed(\.waveFront) }
-        /// Text and strokes drawn over the waves (`AppTheme.onWave`).
-        static var onWave: SwiftUI.Color {
-            let theme = DS.Theme.current
-            return adaptive(light: AppTheme.onWave(theme, theme.light), dark: AppTheme.onWave(theme, theme.dark))
-        }
 
         /// The theme's light accent and moon in both appearances: for the one card that is always drawn on a
         /// dark brand colour (Settings > Private by design), so it does not invert in dark mode.
@@ -155,33 +137,14 @@ enum DS {
 
     // MARK: - Corner Radius
     enum Radius {
-        static let card:   CGFloat = 16
+        static let card:   CGFloat = 22
         static let chip:   CGFloat = 8
         static let button: CGFloat = 12
     }
 }
 
-// MARK: - Page background with the theme's top wash
-
-/// The page colour with a soft wash of the accent behind the status bar and the large title.
-struct ThemedPageBackground: View {
-    var body: some View {
-        ZStack(alignment: .top) {
-            DS.Color.pageBackground
-            LinearGradient(colors: [DS.Color.accent.opacity(DS.Theme.washOpacity), DS.Color.accent.opacity(0)],
-                           startPoint: .top, endPoint: .bottom)
-                .frame(height: 240)
-        }
-        .accessibilityHidden(true)
-    }
-}
-
-extension View {
-    /// `.themedPage()` plus the theme's top wash.
-    func themedPage() -> some View {
-        background(ThemedPageBackground().ignoresSafeArea())
-    }
-}
+// The page background (`ThemedPageBackground`, `.themedPage()`) lives in Views/Components/PhaseAuraBackground.swift
+// (app target only; the widget does not use it).
 
 // MARK: - Event.EventType helpers
 extension Event.EventType {

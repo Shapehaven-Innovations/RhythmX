@@ -59,7 +59,7 @@ final class SafetyCopiesTests: XCTestCase {
         phaseColors: ["#111111", "#222222", "#333333", "#444444"],
         notificationsEnabled: true, notifyDayBefore: true, notifyDayOf: false,
         fertileStartOn: false, fertileOvulationOn: false, trackingMode: "cycle",
-        defaultModeOnLaunch: "last", themeID: "default", reminders: [], dailyCheckIn: nil, weeklyCheckIn: nil
+        defaultModeOnLaunch: "last", themeID: "default", weeklyCheckIn: nil
     )
 
     private func convert() -> URL? {

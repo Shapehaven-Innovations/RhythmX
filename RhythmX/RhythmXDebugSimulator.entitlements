@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Debug builds for the iOS Simulator only (CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*] in the app's Debug
+  configuration). Same as RhythmX.entitlements plus get-task-allow. From iOS 26, storekitd refuses StoreKit
+  Testing calls (SKTestSession) with SKInternalErrorDomain Code=3 and logs "<bundle id> is not installed for
+  development" unless the app carries get-task-allow, which simulator builds signed to run locally do not get
+  on their own. Device and Release builds keep using RhythmX.entitlements. Keep both files in step:
+  any change to RhythmX.entitlements must be copied here.
+-->
+<plist version="1.0">
+<dict>
+	<key>com.apple.developer.healthkit</key>
+	<true/>
+	<key>com.apple.developer.healthkit.access</key>
+	<array/>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.beta.Rhythm</string>
+	</array>
+	<key>get-task-allow</key>
+	<true/>
+</dict>
+</plist>

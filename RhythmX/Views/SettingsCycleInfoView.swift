@@ -23,7 +23,12 @@ struct SettingsCycleInfoView: View {
                     currentCycleCard
 
                     VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-                        Text(isMenopause ? "Start a fresh stretch" : "Start a new cycle").font(DS.Font.sectionHeader).foregroundColor(DS.Color.primaryText)
+                        HStack {
+                            Text(isMenopause ? "Start a fresh stretch" : "Start a new cycle").font(DS.Font.sectionHeader).foregroundColor(DS.Color.primaryText)
+                                .accessibilityAddTraits(.isHeader)
+                            Spacer()
+                            InfoButton(topic: isMenopause ? InfoCopy.freshStretch : InfoCopy.newCycle)
+                        }
                         DatePicker("First day", selection: $selectedStartDate, displayedComponents: .date)
                         Stepper(value: $selectedCycleLength, in: 20...40) {
                             Text("Length: \(selectedCycleLength) days")
@@ -31,10 +36,6 @@ struct SettingsCycleInfoView: View {
                         PrimaryButton(title: "Generate cycle") {
                             if eventStore.events.isEmpty { generateEventsAndAlert() } else { showArchivePrompt = true }
                         }
-                        Text(isMenopause
-                             ? "If you already have entries, you'll be asked whether to archive the older ones first."
-                             : "If you already have events, you'll be asked whether to archive them first.")
-                            .font(DS.Font.micro).foregroundColor(DS.Color.secondaryText)
                     }
                     .cardStyle()
 

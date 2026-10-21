@@ -14,6 +14,7 @@ final class CalendarSyncPolicyTests: XCTestCase {
         var replaceCount = 0
         var removeAllCount = 0
         var removeAllError: Error?
+        var syncsOffDevice = false
 
         func requestAccess() async throws -> Bool { hasAccess }
         func replaceItems(with desired: Set<SyncItem>) throws {
@@ -69,6 +70,41 @@ final class CalendarSyncPolicyTests: XCTestCase {
                         withinGrace: Bool = false, pending: Bool = false) -> CalendarSyncPolicy.Action {
         CalendarSyncPolicy.action(isPlus: isPlus, syncOn: syncOn, hasAccess: hasAccess, verified: verified,
                                   withinGrace: withinGrace, pendingRemoval: pending)
+    }
+
+    // MARK: - Where the RhythmX calendar lives
+
+    func testTheCalendarPrefersTheOnDeviceSource() {
+        let local = CalendarSourceCandidate(id: "L", kind: .local)
+        let iCloud = CalendarSourceCandidate(id: "I", kind: .iCloud)
+        let exchange = CalendarSourceCandidate(id: "E", kind: .other)
+        XCTAssertEqual(CalendarSourcePlanner.order(sources: [iCloud, exchange, local], defaultSource: exchange),
+                       [local, iCloud, exchange], "On My iPhone first, so nothing syncs off the device")
+        XCTAssertEqual(CalendarSourcePlanner.order(sources: [iCloud, exchange], defaultSource: exchange), [iCloud, exchange],
+                       "iCloud only setups fall back to the earlier choice")
+        XCTAssertEqual(CalendarSourcePlanner.order(sources: [exchange, local], defaultSource: nil), [local])
+        XCTAssertEqual(CalendarSourcePlanner.order(sources: [], defaultSource: iCloud), [iCloud])
+        XCTAssertFalse(CalendarSourcePlanner.syncsOffDevice(local))
+        XCTAssertTrue(CalendarSourcePlanner.syncsOffDevice(iCloud))
+        XCTAssertTrue(CalendarSourcePlanner.syncsOffDevice(exchange))
+    }
+
+    func testAnOffDeviceCalendarIsDisclosed() async throws {
+        let store = FakeStore()
+        let sync = CalendarSync(store: store)
+        try await sync.sync(events: cycle, archivedBlocks: [], overrides: FertileOverrides(), options: SyncOptions(),
+                            discreet: false, today: today)
+        XCTAssertNil(sync.offDeviceNote)
+
+        store.syncsOffDevice = true
+        try await sync.sync(events: cycle, archivedBlocks: [], overrides: FertileOverrides(), options: SyncOptions(),
+                            discreet: false, today: today)
+        XCTAssertEqual(sync.offDeviceNote, CalendarSync.iCloudDisclosure)
+        XCTAssertEqual(CalendarSync.iCloudDisclosure,
+                       "Your calendars are stored in iCloud, so this calendar will sync through your iCloud account.")
+        let info = InfoCopy.appleCalendar.paragraphs.joined(separator: " ")
+        XCTAssertFalse(info.contains("Nothing leaves this device"), "the fallback can sync it, so this is not claimed")
+        XCTAssertTrue(info.contains("iCloud"))
     }
 
     // MARK: - Policy

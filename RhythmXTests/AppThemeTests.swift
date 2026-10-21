@@ -1,5 +1,6 @@
 import XCTest
 import SwiftUI
+import Combine
 @testable import RhythmX
 
 /// Task 16: moon themes. Pure palette rules, the Plus fallback, and WCAG AA contrast for every theme.
@@ -192,6 +193,43 @@ final class AppThemeTests: XCTestCase {
         }
     }
 
+    // MARK: - Living background (Phase Aura)
+
+    /// Body text keeps AA on every colour of the aura, for every theme, appearance, phase and time of day.
+    func testTextOnTheAuraMeetsAA() {
+        for theme in AppTheme.all {
+            for (dark, p) in [(false, theme.light), (true, theme.dark)] {
+                for phase in Event.EventType.allCases.map(Optional.some) + [nil] {
+                    for hour in [8, 14, 19, 23] {
+                        let aura = AuraPalette.make(phase: phase, theme: theme, isDark: dark, hour: hour)
+                        for (i, colour) in aura.mesh.enumerated() {
+                            let name = "\(theme.name) dark=\(dark) \(phase.map(\.rawValue) ?? "none") \(hour)h cell \(i)"
+                            XCTAssertGreaterThanOrEqual(contrast(p.ink, colour), 4.5, "\(name): ink on aura")
+                            XCTAssertGreaterThanOrEqual(contrast(p.muted, colour), 4.5, "\(name): muted on aura")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// The moon disc's edge reads against the page (3:1, non-text contrast) and against the aura's centre,
+    /// where the disc sits, in all four themes, light and dark.
+    func testMoonDiscReadsAgainstThePage() {
+        for theme in AppTheme.all {
+            for (dark, p) in [(false, theme.light), (true, theme.dark)] {
+                for phase in Event.EventType.allCases {
+                    for hour in [8, 14, 19, 23] {
+                        let aura = AuraPalette.make(phase: phase, theme: theme, isDark: dark, hour: hour)
+                        let name = "\(theme.name) dark=\(dark) \(phase) \(hour)h"
+                        XCTAssertGreaterThanOrEqual(contrast(aura.disc, p.page), 3.0, "\(name): disc on page")
+                        XCTAssertGreaterThanOrEqual(contrast(aura.disc, aura.mesh[4]), 3.0, "\(name): disc on aura centre")
+                    }
+                }
+            }
+        }
+    }
+
     // MARK: - Phase colours never come from the theme
 
     func testPhaseColorsIdenticalAcrossThemes() {
@@ -215,27 +253,6 @@ final class AppThemeTests: XCTestCase {
     }
 
     // MARK: - Waves
-
-    /// Text over the waves (Onboarding's Skip). Blush keeps white in both appearances; a Plus theme uses the
-    /// colour that reads on its accent, which its waves are derived from, so dark mode gets dark text on the
-    /// light accents instead of white on light.
-    func testOnWaveIsWhiteForBlushAndOnAccentForPlusThemes() {
-        let white = RGB(r: 255, g: 255, b: 255)
-        XCTAssertEqual(AppTheme.onWave(.blush, AppTheme.blush.light), white)
-        XCTAssertEqual(AppTheme.onWave(.blush, AppTheme.blush.dark), white)
-        for theme in AppTheme.all where theme.isPlus {
-            XCTAssertEqual(AppTheme.onWave(theme, theme.light), theme.light.onAccent, theme.id)
-            XCTAssertEqual(AppTheme.onWave(theme, theme.dark), theme.dark.onAccent, theme.id)
-        }
-        // Over what is actually drawn at the bottom of the page: the front wave at its opacity over the page.
-        for theme in AppTheme.all {
-            for (appearance, p) in [("light", theme.light), ("dark", theme.dark)] {
-                let shown = RGB.mix(p.page, p.waveFront, WaveBackground.opacities[2])
-                XCTAssertGreaterThanOrEqual(contrast(AppTheme.onWave(theme, p), shown), 3.0,
-                                            "\(theme.name) \(appearance): bold label over the front wave")
-            }
-        }
-    }
 
     func testWaveColorsDerivedFromAccent() {
         XCTAssertEqual(RGB.mix(RGB(r: 0, g: 0, b: 0), RGB(r: 100, g: 200, b: 50), 0.5), RGB(r: 50, g: 100, b: 25))
@@ -264,5 +281,20 @@ final class AppThemeTests: XCTestCase {
         let p = AppTheme.eclipse.light
         XCTAssertEqual(AppTheme.tabBar(p), RGB.mix(p.card, p.accent, 0.07))
         XCTAssertEqual(DS.Theme.washOpacity, 0.14, accuracy: 0.001)
+    }
+
+    /// Views redraw on a theme change only if the settings object announces it. `StartTabView` gives the
+    /// tabs the effective theme id as their identity, so this announcement is what rebuilds them.
+    func testChangingTheThemeAnnouncesAChangeToViewsObservingSettings() {
+        let settings = AppSettings()
+        let original = settings.themeID
+        addTeardownBlock { settings.themeID = original }
+        var announced = 0
+        let sub = settings.objectWillChange.sink { announced += 1 }
+        defer { sub.cancel() }
+
+        settings.themeID = original == AppTheme.eclipse.id ? AppTheme.blueMoon.id : AppTheme.eclipse.id
+
+        XCTAssertGreaterThan(announced, 0)
     }
 }

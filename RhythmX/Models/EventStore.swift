@@ -54,8 +54,11 @@ class EventStore: ObservableObject {
         }
     }
 
+    /// Replaces the event with the same id. Levels for tags no longer in `tags` are dropped.
     func update(_ event: Event) {
         if let idx = events.firstIndex(where: { $0.id == event.id }) {
+            var event = event
+            event.pruneIntensities()
             movedEvent = events[idx]
             events[idx] = event
             changedEvent = event
@@ -72,15 +75,6 @@ class EventStore: ObservableObject {
         saveToUserDefaults()
         // IMPORTANT: Do NOT flip `shouldReloadAll` here yet.
         // We want it to reload only after user taps "OK" in the alert.
-    }
-
-    /// Onboarding's first setup. Does nothing when events already exist (for example after a
-    /// restore during onboarding), so restored data is never overwritten. Returns true when it generated.
-    @discardableResult
-    func generateInitialCycleEventsIfEmpty(startDate: Date, cycleLength: Int = 28) -> Bool {
-        guard events.isEmpty else { return false }
-        generateCycleEvents(startDate: startDate, cycleLength: cycleLength)
-        return true
     }
 
     // Optional: fetch historical events
@@ -107,14 +101,16 @@ class EventStore: ObservableObject {
     struct MergeCounts: Equatable {
         /// Events that were not on the phone and were appended.
         var added: Int
-        /// Events already on the phone (same id, or same day, type and mode) whose tags gained what the file had.
+        /// Events already on the phone (same id, or same day, type and mode) whose tags gained what the file had,
+        /// or whose tag intensity rose to the file's higher level.
         var updated: Int
     }
 
     /// Adds incoming events that are new. An incoming event whose id already exists, or that falls on the same
     /// start-of-day with the same `eventType` and effective mode as an event already present, is not added;
     /// instead its tags are merged into that event (`unionTags`), so a restore never drops a tag that was
-    /// logged on only one side. The phone's event otherwise stays as it is (date, note, id).
+    /// logged on only one side. Tag intensities are merged too, keeping the higher level for a tag on both
+    /// sides. The phone's event otherwise stays as it is (date, note, id).
     @discardableResult
     func merge(_ incoming: [Event]) -> MergeCounts {
         let calendar = Calendar.current
@@ -136,6 +132,9 @@ class EventStore: ObservableObject {
                     merged[index].tags = unioned
                     updatedIndices.insert(index)
                 }
+                if Self.mergeIntensity(into: &merged[index], from: event) {
+                    updatedIndices.insert(index)
+                }
                 continue
             }
             indexByID[event.id] = merged.count
@@ -153,7 +152,7 @@ class EventStore: ObservableObject {
     /// `existing` plus whatever `incoming` has that it lacks, in the stored "a, b, c" form; nil when nothing is
     /// missing. A one-per-day tag is never doubled. A repeatable tag ("Hot Flashes") keeps the higher of the two
     /// counts (multiset union), so merging the same file twice does not inflate it.
-    static func unionTags(_ existing: String, adding incoming: String) -> String? {
+    nonisolated static func unionTags(_ existing: String, adding incoming: String) -> String? {
         var result = TagParser.split(existing)
         let before = result.count
         var have: [String: Int] = [:]
@@ -168,6 +167,18 @@ class EventStore: ObservableObject {
             }
         }
         return result.count > before ? result.joined(separator: ", ") : nil
+    }
+
+    /// Adds `source`'s levels to `target` for tags `target` now holds, keeping the higher level.
+    /// Returns whether a level changed.
+    @discardableResult
+    static func mergeIntensity(into target: inout Event, from source: Event) -> Bool {
+        let present = Set(TagParser.split(target.tags))
+        let incoming = source.tagIntensity?.filter { present.contains($0.key) }
+        let merged = Event.mergedIntensity(target.tagIntensity, incoming)
+        guard merged != target.tagIntensity else { return false }
+        target.tagIntensity = merged
+        return true
     }
 
     private struct DayType: Hashable {
@@ -205,18 +216,49 @@ class EventStore: ObservableObject {
     }
 
     /// Appends `raw` to the one event `eventForLogging` picks, creating a Menopause carrier when needed,
-    /// so a tag is counted once however many events share the day.
+    /// so a tag is counted once however many events share the day. `intensity` is stored beside the tag.
+    /// A one-per-day tag already logged that day is a duplicate, except that logging it again at a different
+    /// level (or with no level, which turns a stored level off) changes the stored level on the event that holds
+    /// the tag instead. A repeatable tag is appended
+    /// again and keeps the higher of its levels.
     /// Returns false, and changes nothing, when the tag is a duplicate or there is no event to hold it.
     @discardableResult
-    func logTag(_ raw: String, on date: Date, mode: TrackingMode) -> Bool {
-        guard !isDuplicateTag(raw, on: date) else { return false }
+    func logTag(_ raw: String, on date: Date, mode: TrackingMode, intensity: TagIntensity? = nil) -> Bool {
+        if isDuplicateTag(raw, on: date) {
+            // Logging it again with no level turns a stored level off; the tag itself stays.
+            guard var holder = events.first(where: {
+                      $0.date.startOfDay == date.startOfDay && TagParser.split($0.tags).contains(raw)
+                  }),
+                  holder.intensity(for: raw) != intensity else { return false }
+            holder.setIntensity(intensity, for: raw)
+            update(holder)
+            return true
+        }
         // Re-read the picked event from `events`: creating a carrier saves, and that save may have folded in
         // tags the widget wrote meanwhile (`foldInExternalWrites`), which the returned copy would not carry.
         guard let picked = eventForLogging(on: date, mode: mode),
               var target = events.first(where: { $0.id == picked.id }) else { return false }
         target.tags = target.tags.isEmpty ? raw : target.tags + ", \(raw)"
+        if let intensity {
+            let level = max(intensity, target.intensity(for: raw) ?? intensity)
+            target.setIntensity(level, for: raw)
+        }
         update(target)
         return true
+    }
+
+    /// Clears `raw` from that day: every occurrence on every event of the day, with its level.
+    /// Returns false, and changes nothing, when the day does not hold the tag.
+    @discardableResult
+    func clearTag(_ raw: String, on date: Date) -> Bool {
+        let day = date.startOfDay
+        let holders = events.filter { $0.date.startOfDay == day && TagParser.split($0.tags).contains(raw) }
+        for var event in holders {
+            event.tags = TagParser.removing(raw, from: event.tags)
+            event.setIntensity(nil, for: raw)
+            update(event)
+        }
+        return !holders.isEmpty
     }
 
     /// Remove one raw tag from every event in a phase.
@@ -283,9 +325,17 @@ class EventStore: ObservableObject {
                 target = indexByDayType[key(event)]
             }
             if let target {
+                let before = Set(TagParser.split(merged[target].tags))
                 if let unioned = Self.unionTags(merged[target].tags, adding: event.tags) {
                     merged[target].tags = unioned
                     changed = true
+                }
+                // Only levels for tags the external write added: a level this store changed since its last
+                // sync is newer than the one on disk. (The widget never writes levels.)
+                if let external = event.tagIntensity?.filter({ !before.contains($0.key) }), !external.isEmpty {
+                    var copy = event
+                    copy.tagIntensity = external
+                    if Self.mergeIntensity(into: &merged[target], from: copy) { changed = true }
                 }
             } else {
                 indexByID[event.id] = merged.count
