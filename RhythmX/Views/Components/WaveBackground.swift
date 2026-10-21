@@ -32,13 +32,16 @@ struct WaveBackground: View {
     var drift: Bool = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    /// Back, middle and front layer opacities; the theme only changes the colours.
+    static let opacities: [Double] = [0.35, 0.50, 0.75]
+
     var body: some View {
         TimelineView(.animation(paused: !(drift && !reduceMotion))) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
             ZStack {
-                layer(color: DS.Color.waveBack,  opacity: 0.35, top: 0.00, phase: t * 0.6)
-                layer(color: DS.Color.waveMid,   opacity: 0.50, top: 0.22, phase: t * 0.9 + 1)
-                layer(color: DS.Color.waveFront, opacity: 0.75, top: 0.46, phase: t * 1.2 + 2)
+                layer(color: DS.Color.waveBack,  opacity: Self.opacities[0], top: 0.00, phase: t * 0.6)
+                layer(color: DS.Color.waveMid,   opacity: Self.opacities[1], top: 0.22, phase: t * 0.9 + 1)
+                layer(color: DS.Color.waveFront, opacity: Self.opacities[2], top: 0.46, phase: t * 1.2 + 2)
             }
         }
         .accessibilityHidden(true)

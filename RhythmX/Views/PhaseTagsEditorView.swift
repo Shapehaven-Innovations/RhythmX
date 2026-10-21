@@ -36,20 +36,9 @@ struct PhaseTagsEditorView: View {
             // For each event in the local array, show a multiline text field
             ForEach($localEvents) { $event in
                 Section {
-                    // iOS 16+ multiline text field
-                    if #available(iOS 16.0, *) {
-                        TextField("Tags", text: $event.tags, axis: .vertical)
-                            .lineLimit(3)
-                            .textFieldStyle(.roundedBorder)
-                    } else {
-                        // iOS 15 fallback
-                        TextEditor(text: $event.tags)
-                            .frame(minHeight: 60)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .stroke(Color.secondary, lineWidth: 1)
-                            )
-                    }
+                    TextField("Tags", text: $event.tags, axis: .vertical)
+                        .lineLimit(3)
+                        .textFieldStyle(.roundedBorder)
                 } header: {
                     // Display the date as a header
                     Text(event.date.formatted(date: .abbreviated, time: .omitted))

@@ -11,14 +11,14 @@ struct ChipButton: View {
         Button(action: action) {
             Text(title)
                 .font(DS.Font.caption.weight(.medium))
-                .foregroundColor(isSelected ? DS.Color.onAccent : Color.accentColor)
+                .foregroundColor(isSelected ? DS.Color.onAccent : DS.Color.accent)
                 .padding(.vertical, DS.Spacing.sm)
                 .padding(.horizontal, DS.Spacing.md)
-                .background(isSelected ? Color.accentColor : DS.Color.cardBackground)
+                .background(isSelected ? DS.Color.accent : DS.Color.cardBackground)
                 .cornerRadius(DS.Radius.chip)
                 .overlay(
                     RoundedRectangle(cornerRadius: DS.Radius.chip)
-                        .stroke(Color.accentColor.opacity(0.3), lineWidth: 1)
+                        .stroke(DS.Color.accent.opacity(0.3), lineWidth: 1)
                 )
         }
         .accessibilityLabel(title)

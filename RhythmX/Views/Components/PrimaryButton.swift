@@ -14,7 +14,7 @@ struct PrimaryButton: View {
                 .foregroundColor(DS.Color.onAccent)
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
-                .background(isDisabled ? Color.accentColor.opacity(0.4) : Color.accentColor)
+                .background(isDisabled ? DS.Color.accent.opacity(0.4) : DS.Color.accent)
                 .cornerRadius(DS.Radius.button)
         }
         .disabled(isDisabled)

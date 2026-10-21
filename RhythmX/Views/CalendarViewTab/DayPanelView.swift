@@ -35,10 +35,10 @@ struct DayPanelView: View {
             }
 
             Toggle("Fertile window", isOn: Binding(
-                get: { fertileStore.isFertile(date, events: eventStore.events) },
+                get: { fertileStore.isFertile(date, events: eventStore.cycleEvents) },
                 set: { on in
-                    if on != fertileStore.isFertile(date, events: eventStore.events) {
-                        fertileStore.toggle(date, events: eventStore.events)
+                    if on != fertileStore.isFertile(date, events: eventStore.cycleEvents) {
+                        fertileStore.toggle(date, events: eventStore.cycleEvents)
                     }
                 }
             ))

@@ -38,6 +38,7 @@ struct PastCycleCard: View {
                 VStack(alignment: .leading, spacing: DS.Spacing.sm) {
                     HStack {
                         Text(title).font(DS.Font.sectionHeader).foregroundColor(DS.Color.primaryText)
+                        modeLabel
                         Spacer()
                         Text("\(lengthDays) days · \(tagCount) tags")
                             .font(DS.Font.micro).foregroundColor(DS.Color.secondaryText)
@@ -59,7 +60,7 @@ struct PastCycleCard: View {
                         HStack(spacing: DS.Spacing.xs) {
                             MoonPhaseView(phase: phase.eventType.moonPhase,
                                           color: appSettings.phaseColor(for: phase.eventType), size: 14)
-                            Text(phase.eventType.displayName)
+                            Text(block.effectiveMode == .menopause ? "Entries" : phase.eventType.displayName)
                                 .font(DS.Font.caption.weight(.semibold))
                                 .foregroundColor(appSettings.phaseColor(for: phase.eventType))
                         }
@@ -80,12 +81,23 @@ struct PastCycleCard: View {
                         NavigationLink("Edit tags") { PhaseTagsEditorView(phase: phase) }
                             .buttonStyle(.borderless)
                             .font(DS.Font.micro.weight(.medium))
-                            .foregroundColor(.accentColor)
+                            .foregroundColor(DS.Color.accent)
                     }
                 }
             }
         }
         .cardStyle()
+    }
+
+    /// Small label naming the mode the block was archived under (legacy blocks read as Cycle).
+    private var modeLabel: some View {
+        Text(block.effectiveMode.title)
+            .font(DS.Font.micro.weight(.medium))
+            .padding(.vertical, 2).padding(.horizontal, DS.Spacing.xs)
+            .background(DS.Color.accent.opacity(0.12))
+            .foregroundColor(DS.Color.accent)
+            .clipShape(Capsule())
+            .accessibilityLabel("\(block.effectiveMode.title) mode")
     }
 
     private var title: String {

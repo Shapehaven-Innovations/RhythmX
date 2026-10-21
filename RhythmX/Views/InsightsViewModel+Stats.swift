@@ -17,9 +17,10 @@ extension InsightsViewModel {
         let currentSpan = Self.spanDays(currentDates)
 
         // Cycle length: archived cycles when present, else the current one.
+        // Blocks under `CyclePredictionService.minimumCycleLength` days are not real cycles and are left out.
         let archivedSpans = archivedBlocks.compactMap {
             Self.spanDays($0.groupedEvents.flatMap { $0.events }.map(\.date))
-        }
+        }.filter { $0 >= CyclePredictionService.minimumCycleLength }
         let cycleLengths = archivedSpans.isEmpty ? (currentSpan.map { [$0] } ?? []) : archivedSpans
 
         // Period length: count of menstrual days.

@@ -9,17 +9,21 @@ struct InsightsView: View {
     @EnvironmentObject var appSettings: AppSettings
 
     @State private var selectedPhase: Event.EventType? = nil
+    @State private var showReport = false
 
+    /// The Insights section of Today: the per-mode charts and cards and the Doctor Report row. Today hosts it in
+    /// its own scroll view under an "Insights" heading; the mode switcher sits at the top of Today.
     var body: some View {
         let vm = InsightsViewModel(
-            events: myEvents.events,
-            archivedBlocks: archivedDataStore.archivedBlocks,
+            events: myEvents.cycleEvents,
+            archivedBlocks: archivedDataStore.cycleBlocks,
             appSettings: appSettings
         )
-        return NavigationStack {
-            ScrollView {
+        VStack(alignment: .leading, spacing: 0) {
+            switch appSettings.trackingMode {
+            case .cycle:
                 if vm.events.isEmpty && vm.archivedBlocks.isEmpty {
-                    emptyState
+                    emptyState.frame(maxWidth: .infinity)
                 } else {
                     VStack(alignment: .leading, spacing: DS.Spacing.md) {
                         InsightsHeroCard(stats: vm.cycleStats())
@@ -31,11 +35,53 @@ struct InsightsView: View {
                     }
                     .padding(DS.Spacing.md)
                 }
+            case .planning:
+                PlanningInsightsView()
+                    .padding(DS.Spacing.md)
+            case .menopause:
+                MenopauseInsightsView()
+                    .padding(DS.Spacing.md)
             }
-            .background(DS.Color.pageBackground.ignoresSafeArea())
-            .navigationTitle("Insights")
-            .navigationBarTitleDisplayMode(.large)
+
+            doctorReportRow
+                .padding(.horizontal, DS.Spacing.md)
+                .padding(.bottom, DS.Spacing.lg)
         }
+        .sheet(isPresented: $showReport) {
+            ExportView(kind: .report)
+        }
+    }
+
+    // MARK: - Doctor Report
+
+    private var doctorReportRow: some View {
+        Button { showReport = true } label: {
+            HStack(spacing: DS.Spacing.md) {
+                Image(systemName: "doc.text")
+                    .font(DS.Font.sectionHeader)
+                    .foregroundColor(DS.Color.accent)
+                    .frame(width: DS.Spacing.lg)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Doctor Report")
+                        .font(DS.Font.label.weight(.semibold))
+                        .foregroundColor(DS.Color.primaryText)
+                    Text("A one-page summary to bring to an appointment. Preview is free.")
+                        .font(DS.Font.caption)
+                        .foregroundColor(DS.Color.secondaryText)
+                        .multilineTextAlignment(.leading)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(DS.Font.caption)
+                    .foregroundColor(DS.Color.tertiaryText)
+                    .accessibilityHidden(true)
+            }
+            .cardStyle()
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("Opens the Doctor Report preview")
     }
 
     // MARK: - Empty State
@@ -484,8 +530,10 @@ struct InsightsView: View {
 }
 
 #Preview {
-    InsightsView()
+    ScrollView { InsightsView() }
         .environmentObject(ArchivedDataStore())
         .environmentObject(EventStore(preview: true))
+        .environmentObject(FertileStore())
         .environmentObject(AppSettings())
+        .environmentObject(HealthSync())
 }

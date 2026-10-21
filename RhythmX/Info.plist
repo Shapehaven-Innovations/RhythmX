@@ -2,9 +2,78 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>beta.Rhythm.dailyInsights</string>
+	</array>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>RhythmX Backup</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>beta.Rhythm.backup</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>CFBundleURLName</key>
+			<string>beta.Rhythm</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>rhythmx</string>
+			</array>
+		</dict>
+	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
-	<key>NSUserNotificationsUsageDescription</key>
-	<string>RhythmX uses notifications to remind you when your cycle is anticipated to start.</string>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>RhythmX adds your period days, predicted period, fertile window and phase starts to a calendar named RhythmX, keeps them up to date and removes them when you turn sync off. Full access is needed to create that calendar and to update or remove its events. RhythmX reads and writes only the RhythmX calendar. It is kept On My iPhone; if your calendars are stored only in iCloud, it syncs through your iCloud account.</string>
+	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
+	<string>RhythmX adds your cycle days to a calendar named RhythmX, kept On My iPhone, or in iCloud if your calendars are stored only there.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>RhythmX reads basal body temperature and sleep from Health only when you turn those switches on. The readings are shown on Today and offered when you log a tag. They stay on this device.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>RhythmX writes your logged period days to Health as menstrual flow only when you turn that switch on. Nothing is sent anywhere.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+	</array>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>RhythmX Backup</string>
+			<key>UTTypeIdentifier</key>
+			<string>beta.Rhythm.backup</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>rhythmx</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/x-rhythmx</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
 </dict>
 </plist>

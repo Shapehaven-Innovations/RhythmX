@@ -3,8 +3,13 @@
 import Foundation
 
 struct CyclePredictionService {
+    /// Archived blocks shorter than this are not a real cycle (most likely a period start logged by mistake
+    /// and then logged again), so they never take part in the average.
+    static let minimumCycleLength = 15
 
     static func predictedStartDate(from archives: [ArchivedDataBlock]) -> Date? {
+        // Menopause blocks have no cycle to predict from, whatever the caller passed in.
+        let archives = archives.filter { $0.effectiveMode != .menopause }
         guard !archives.isEmpty else { return nil }
 
         let lengths: [Int] = archives.compactMap { block -> Int? in
@@ -12,7 +17,7 @@ struct CyclePredictionService {
             guard let first = allDates.min(), let last = allDates.max() else { return nil }
             let days = Calendar.current.dateComponents([.day], from: first, to: last).day.map { $0 + 1 }
             return days
-        }.filter { $0 > 0 }
+        }.filter { $0 >= minimumCycleLength }
 
         guard !lengths.isEmpty else { return nil }
         let avgLength = lengths.reduce(0, +) / lengths.count
