@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		00D887A467FDC2FE4EA50B3C /* TodayScreenshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BC288D918D5F94C026097B9 /* TodayScreenshotTests.swift */; };
+		3B7D1E4F9A2C5068B1D3E5F7 /* LogPeriodScreenshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C8E2F5A0B3D6179C2E4F608 /* LogPeriodScreenshotTests.swift */; };
 		047CBE153484CF7CE05A38B0 /* BackupFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 822FF144C0E4749995158FC1 /* BackupFile.swift */; };
 		057300659F7B3A7A9485E84A /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 070446420BBAB7D83402B5F3 /* Foundation.framework */; };
 		05D35E10157D9DC85C97CE67 /* Date+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A284FAC2CA7082E0021A785 /* Date+Extension.swift */; };
@@ -39,6 +40,7 @@
 		220CF4ECDB223936B6188E27 /* NotificationsPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BDF3DAA61A86B6445F85CED /* NotificationsPage.swift */; };
 		221ACE746FC7FE588BB78C34 /* PDFPageSetupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62C30663B211400605F588C2 /* PDFPageSetupTests.swift */; };
 		2245B7E1812BF5E0EE192437 /* PastCycleCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BBB374DF18272CE381029A6 /* PastCycleCard.swift */; };
+		7C1E2A9B4D5F60718293A4B5 /* LogPeriodSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D2F3B0C5E6071829304B5C6 /* LogPeriodSheet.swift */; };
 		25133D5D48C655F1110FFC2D /* InsightTileStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDE03E154662ECF7AD5FE118 /* InsightTileStream.swift */; };
 		26D35AA57973D29B0B1F6E2B /* TagDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8333C3FE871524C65ED76D8F /* TagDetailView.swift */; };
 		2946B3EA491260412151EF69 /* CalendarPDFRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17D2055931B935BF1977609C /* CalendarPDFRenderer.swift */; };
@@ -271,6 +273,7 @@
 		070446420BBAB7D83402B5F3 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		0915DD785D3B2182B5166CEC /* TagPatternsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TagPatternsView.swift; sourceTree = "<group>"; };
 		0BBB374DF18272CE381029A6 /* PastCycleCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PastCycleCard.swift; sourceTree = "<group>"; };
+		8D2F3B0C5E6071829304B5C6 /* LogPeriodSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LogPeriodSheet.swift; sourceTree = "<group>"; };
 		0DAC2607A77901A9B4E4581C /* TodayWeekStripView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TodayWeekStripView.swift; sourceTree = "<group>"; };
 		0EADFBF436F5FDB7DFB8CC1B /* ArchiveModeTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ArchiveModeTests.swift; sourceTree = "<group>"; };
 		1001EAF268AEBA718BB5F6C8 /* QuickLogWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = QuickLogWidget.swift; sourceTree = "<group>"; };
@@ -365,6 +368,7 @@
 		66BD2F8D0BBD118A279F3303 /* TagFormLogicTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TagFormLogicTests.swift; sourceTree = "<group>"; };
 		674AFC226D81B5306644CC60 /* InfoCopy.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = InfoCopy.swift; path = Services/InfoCopy.swift; sourceTree = "<group>"; };
 		6BC288D918D5F94C026097B9 /* TodayScreenshotTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TodayScreenshotTests.swift; sourceTree = "<group>"; };
+		4C8E2F5A0B3D6179C2E4F608 /* LogPeriodScreenshotTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LogPeriodScreenshotTests.swift; sourceTree = "<group>"; };
 		6C35E3907455447F3B30C097 /* EntitlementTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EntitlementTests.swift; sourceTree = "<group>"; };
 		6E0048E00B83D00CB66DBB29 /* FertileWindowTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FertileWindowTests.swift; sourceTree = "<group>"; };
 		6F84F6DD2E4531FD1BA3FD7B /* MenopauseInsightsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MenopauseInsightsView.swift; sourceTree = "<group>"; };
@@ -637,6 +641,7 @@
 				429A3CDCBF249BDFC904ACD7 /* TodayHomeTests.swift */,
 				262422FE759FEA71263E03CD /* AuraPaletteTests.swift */,
 				6BC288D918D5F94C026097B9 /* TodayScreenshotTests.swift */,
+				4C8E2F5A0B3D6179C2E4F608 /* LogPeriodScreenshotTests.swift */,
 				C98A8E33A5483E08F54D35E2 /* TagSheetLogicTests.swift */,
 				A6397A5C5C13DD0A4EADB24F /* QuickLogCardLogicTests.swift */,
 				1D278A81EEFE79DE946506D1 /* InfoCopyTests.swift */,
@@ -785,6 +790,7 @@
 				367AF7B537C68EF6B0091FFE /* InsightsViewModel+Stats.swift */,
 				576EC63054D483C415493B45 /* InsightsHeroCard.swift */,
 				0BBB374DF18272CE381029A6 /* PastCycleCard.swift */,
+				8D2F3B0C5E6071829304B5C6 /* LogPeriodSheet.swift */,
 				5239C7638CE1EF4BA1314818 /* BackupView.swift */,
 				4E9B19BBFBFE60CEF252734C /* ModeSwitcher.swift */,
 				D59C233A2F415D16F883D4A7 /* PlanningInsightsView.swift */,
@@ -1130,6 +1136,7 @@
 				1F8087C017D67E5154C040AB /* FlowLayout.swift in Sources */,
 				D9C73219A3A1808C08C8A140 /* PhaseGuideContent.swift in Sources */,
 				2245B7E1812BF5E0EE192437 /* PastCycleCard.swift in Sources */,
+				7C1E2A9B4D5F60718293A4B5 /* LogPeriodSheet.swift in Sources */,
 				71A0B21EE56BD46F8C4F40C8 /* SharedDefaults.swift in Sources */,
 				17ACB23F7A0F86AD48B559B0 /* PhaseWidgetSnapshot.swift in Sources */,
 				0F5D4A10AD755E83C8B6E294 /* FertileWindow.swift in Sources */,
@@ -1264,6 +1271,7 @@
 				20F8B69EC93D2C7AA71E35F4 /* TodayHomeTests.swift in Sources */,
 				EFA5C7431D431E6CC8B5641E /* AuraPaletteTests.swift in Sources */,
 				00D887A467FDC2FE4EA50B3C /* TodayScreenshotTests.swift in Sources */,
+				3B7D1E4F9A2C5068B1D3E5F7 /* LogPeriodScreenshotTests.swift in Sources */,
 				6A366E427989095250B9D0EE /* TagSheetLogicTests.swift in Sources */,
 				B5CE95F07303263F8133E6D9 /* QuickLogCardLogicTests.swift in Sources */,
 				726ABCEDFDEBB5ED7E75ED03 /* InfoCopyTests.swift in Sources */,

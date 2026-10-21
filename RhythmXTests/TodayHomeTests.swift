@@ -177,7 +177,7 @@ final class TodayHomeTests: XCTestCase {
         old[todayIndex].tags = "Symptom:Bloating"
         old[todayIndex].mode = .cycle
         let meno = Event(eventType: .follicular, date: date(2026, 10, 1), note: "", tags: "Menopause:Hot Flashes", mode: .menopause)
-        let plan = PeriodStartPlan.make(events: old + [meno], today: today, cycleLength: 28, calendar: calendar)
+        let plan = PeriodStartPlan.make(events: old + [meno], start: today, cycleLength: 28, calendar: calendar)
 
         XCTAssertEqual(plan.archive.count, 25, "days 1 to 25 move to Past cycles")
         XCTAssertTrue(plan.archive.allSatisfy { $0.date < today })
@@ -197,7 +197,7 @@ final class TodayHomeTests: XCTestCase {
         let todayIndex = old.firstIndex { calendar.isDate($0.date, inSameDayAs: today) }!
         old[todayIndex].tags = "Planning:Ovulation Test Negative"
         old[todayIndex].mode = .planning
-        let plan = PeriodStartPlan.make(events: old, today: today, cycleLength: 28, calendar: calendar)
+        let plan = PeriodStartPlan.make(events: old, start: today, cycleLength: 28, calendar: calendar)
         let first = plan.events.min { $0.date < $1.date }!
         XCTAssertEqual(first.mode, .planning, "a Planning tag stays a Planning tag")
     }
@@ -213,7 +213,7 @@ final class TodayHomeTests: XCTestCase {
         let second = Event(eventType: .luteal, date: today.addingTimeInterval(3600), note: "",
                            tags: "Mood:Calm, Symptom:Cramps", mode: .cycle,
                            tagIntensity: ["Mood:Calm": 1, "Symptom:Cramps": 1])
-        let plan = PeriodStartPlan.make(events: old + [second], today: today, cycleLength: 28, calendar: calendar)
+        let plan = PeriodStartPlan.make(events: old + [second], start: today, cycleLength: 28, calendar: calendar)
         let todays = plan.events.filter { calendar.isDate($0.date, inSameDayAs: today) }
         XCTAssertEqual(todays.count, 1, "one day 1")
         let first = todays[0]
@@ -231,7 +231,7 @@ final class TodayHomeTests: XCTestCase {
         let farIndex = events.firstIndex { calendar.isDate($0.date, inSameDayAs: date(2026, 11, 19, hour: 0)) }!
         events[farIndex].tags = "Note:Trip"
         events[farIndex].tagIntensity = nil
-        let plan = PeriodStartPlan.make(events: events, today: today, cycleLength: 28, calendar: calendar)
+        let plan = PeriodStartPlan.make(events: events, start: today, cycleLength: 28, calendar: calendar)
         let kept = plan.events.first { TagParser.split($0.tags).contains("Note:Trip") }
         XCTAssertNotNil(kept, "a carried tag past the new cycle length is not dropped")
         XCTAssertTrue(calendar.isDate(kept!.date, inSameDayAs: date(2026, 11, 19, hour: 0)), "it stays on its own day")
@@ -247,16 +247,135 @@ final class TodayHomeTests: XCTestCase {
         XCTAssertFalse(PeriodStartPlan.offersMoveStart(cycleDay: 15))
     }
 
-    func testLogPeriodConfirmationSaysWhatHappens() {
-        let early = PeriodStartPlan.confirmationMessage(cycleDay: 3)
-        XCTAssertTrue(early.contains("2 days ago"), early)
-        XCTAssertTrue(early.contains("move it to today"), early)
-        let late = PeriodStartPlan.confirmationMessage(cycleDay: 26)
-        XCTAssertTrue(late.contains("move to Past cycles"), late)
-        XCTAssertTrue(late.contains("Tags you logged today stay"), late)
-        for text in [early, late, PeriodStartPlan.confirmationMessage(cycleDay: nil)] {
+    // MARK: - The offer for a chosen day
+
+    func testOfferForTodaySaysWhatHappens() {
+        let today = date(2026, 10, 20, hour: 0)
+        let early = PeriodStartPlan.offer(events: CycleGenerator.events(startDate: date(2026, 10, 18, hour: 0), cycleLength: 28),
+                                          start: today, today: today, calendar: calendar)
+        XCTAssertEqual(early.actions, [.moveStart, .startNewCycle])
+        XCTAssertTrue(early.offersMoveStart)
+        XCTAssertTrue(early.message.contains("started on Oct 18"), early.message)
+        XCTAssertTrue(early.message.contains("move it to today"), early.message)
+
+        let late = PeriodStartPlan.offer(events: CycleGenerator.events(startDate: date(2026, 9, 25, hour: 0), cycleLength: 28),
+                                         start: today, today: today, calendar: calendar)
+        XCTAssertEqual(late.actions, [.startNewCycle])
+        XCTAssertTrue(late.message.hasPrefix("Today becomes day 1"), late.message)
+        XCTAssertTrue(late.message.contains("move to Past cycles"), late.message)
+        XCTAssertFalse(late.message.contains("in Cycles"), "the sheet is the one place to log a period")
+
+        for text in [early.message, late.message] {
             XCTAssertFalse(text.contains("\u{2014}") || text.contains("\u{2013}") || text.contains("--"), text)
         }
+    }
+
+    func testOfferWithNoCycleDataSimplyStartsTheCycle() {
+        let today = date(2026, 10, 20, hour: 0)
+        let meno = Event(eventType: .follicular, date: date(2026, 10, 1), note: "", tags: "Menopause:Hot Flashes", mode: .menopause)
+        let offer = PeriodStartPlan.offer(events: [meno], start: date(2026, 10, 18, hour: 0), today: today, calendar: calendar)
+        XCTAssertEqual(offer.actions, [.startNewCycle])
+        XCTAssertTrue(offer.message.hasPrefix("Oct 18 becomes day 1 of your cycle"), offer.message)
+        XCTAssertFalse(offer.message.contains("Past cycles"), "nothing is archived on a fresh install")
+    }
+
+    func testOfferForAPastDayUsesThatDayInTheCycle() {
+        let today = date(2026, 10, 20, hour: 0)
+        let events = CycleGenerator.events(startDate: date(2026, 10, 10, hour: 0), cycleLength: 28)   // day 11 today
+        // Oct 12 is day 3 of the current cycle: the start can move there.
+        let early = PeriodStartPlan.offer(events: events, start: date(2026, 10, 12, hour: 0), today: today, calendar: calendar)
+        XCTAssertEqual(early.actions, [.moveStart, .startNewCycle])
+        XCTAssertTrue(early.message.contains("started on Oct 10"), early.message)
+        // Yesterday is named as such.
+        let yesterday = PeriodStartPlan.offer(events: events, start: date(2026, 10, 19, hour: 0), today: today, calendar: calendar)
+        XCTAssertTrue(yesterday.message.contains("move it to yesterday"), yesterday.message)
+        // Day 2: one day, in the singular.
+        let dayTwo = PeriodStartPlan.offer(events: events, start: date(2026, 10, 11, hour: 0), today: today, calendar: calendar)
+        XCTAssertTrue(dayTwo.message.contains("started on Oct 10"), dayTwo.message)
+        XCTAssertTrue(dayTwo.message.contains("that day moves to Past cycles"), dayTwo.message)
+        // The cycle's own first day: nothing to do.
+        let same = PeriodStartPlan.offer(events: events, start: date(2026, 10, 10, hour: 0), today: today, calendar: calendar)
+        XCTAssertTrue(same.actions.isEmpty)
+        XCTAssertEqual(same.message, "Your cycle already starts Oct 10.")
+        // A day before the current start: the start moves back, nothing is archived.
+        let before = PeriodStartPlan.offer(events: events, start: date(2026, 10, 8, hour: 0), today: today, calendar: calendar)
+        XCTAssertEqual(before.actions, [.moveStart])
+        XCTAssertTrue(before.message.contains("started Oct 10"), before.message)
+        // Day 15 and later: a new cycle only.
+        let long = CycleGenerator.events(startDate: date(2026, 9, 25, hour: 0), cycleLength: 28)
+        XCTAssertEqual(PeriodStartPlan.offer(events: long, start: date(2026, 10, 9, hour: 0), today: today, calendar: calendar).actions,
+                       [.startNewCycle])
+        XCTAssertEqual(PeriodStartPlan.Offer.Action.moveStart.title, "Move period start to this day")
+    }
+
+    func testPickerRangeNeverGoesIntoTheFutureOrIntoAPastCycle() {
+        let today = date(2026, 10, 20, hour: 0)
+        let open = PeriodStartPlan.pickerRange(today: today, blocks: [], calendar: calendar)
+        XCTAssertEqual(open.upperBound, today)
+        XCTAssertEqual(open.lowerBound, calendar.date(byAdding: .day, value: -PeriodStartPlan.daysBack, to: today))
+        XCTAssertEqual(PeriodStartPlan.clampedStart(date(2026, 10, 25), today: today, blocks: [], calendar: calendar), today,
+                       "a future day becomes today")
+        XCTAssertEqual(PeriodStartPlan.clampedStart(date(2026, 5, 1), today: today, blocks: [], calendar: calendar), open.lowerBound)
+
+        // The latest Past cycle ended Oct 4, so the first day can be Oct 5 at the earliest.
+        let previous = ArchivedDataBlock(date: date(2026, 10, 5),
+                                         groupedEvents: [.init(eventType: .luteal, events: CycleGenerator.events(startDate: date(2026, 9, 7, hour: 0), cycleLength: 28))])
+        let meno = ArchivedDataBlock(date: date(2026, 10, 19), groupedEvents: [.init(eventType: .follicular, events: [
+            Event(eventType: .follicular, date: date(2026, 10, 18), note: "", tags: "Menopause:Hot Flashes", mode: .menopause)])], mode: .menopause)
+        let fenced = PeriodStartPlan.pickerRange(today: today, blocks: [meno, previous], calendar: calendar)
+        XCTAssertEqual(fenced.lowerBound, date(2026, 10, 5, hour: 0), "menopause blocks do not count")
+        XCTAssertEqual(PeriodStartPlan.clampedStart(date(2026, 10, 1), today: today, blocks: [previous], calendar: calendar),
+                       date(2026, 10, 5, hour: 0))
+    }
+
+    func testDefaultCycleLengthIsTheAverageWithinTheRange() {
+        XCTAssertEqual(PeriodStartPlan.defaultCycleLength(snapshot: snapshot()), 28, "no average and no length: 28")
+        XCTAssertEqual(PeriodStartPlan.defaultCycleLength(snapshot: PhaseWidgetSnapshot(phase: .luteal, cycleDay: 3, daysUntilNext: 1,
+                                                                                        cycleLength: 31, averageCycleLength: 33)), 33)
+        XCTAssertEqual(PeriodStartPlan.defaultCycleLength(snapshot: PhaseWidgetSnapshot(phase: .luteal, cycleDay: 3, daysUntilNext: 1,
+                                                                                        averageCycleLength: 60)), 45)
+        XCTAssertEqual(PeriodStartPlan.defaultCycleLength(snapshot: PhaseWidgetSnapshot(phase: .luteal, cycleDay: 3, daysUntilNext: 1,
+                                                                                        cycleLength: 12)), 20)
+    }
+
+    func testPeriodStartOnAPastDayArchivesOnlyTheDaysBeforeIt() {
+        let today = date(2026, 10, 20, hour: 0)
+        let start = date(2026, 10, 18, hour: 0)   // the period began two days ago
+        var old = CycleGenerator.events(startDate: date(2026, 9, 25, hour: 0), cycleLength: 28)
+        let yesterday = old.firstIndex { calendar.isDate($0.date, inSameDayAs: date(2026, 10, 19, hour: 0)) }!
+        old[yesterday].tags = "Symptom:Cramps"
+        let plan = PeriodStartPlan.make(events: old, start: start, cycleLength: 28, calendar: calendar)
+
+        XCTAssertEqual(plan.archive.count, 23, "Sep 25 to Oct 17 move to Past cycles")
+        XCTAssertTrue(plan.archive.allSatisfy { $0.date < start })
+        XCTAssertEqual(plan.events.count, 28)
+        let first = plan.events.min { $0.date < $1.date }!
+        XCTAssertTrue(calendar.isDate(first.date, inSameDayAs: start), "the new cycle starts on the chosen day, not today")
+        XCTAssertEqual(first.eventType, .menstrual)
+        let day2 = plan.events.first { calendar.isDate($0.date, inSameDayAs: date(2026, 10, 19, hour: 0)) }!
+        XCTAssertEqual(day2.tags, "Symptom:Cramps", "a tag between the chosen day and today stays on its day")
+        XCTAssertEqual(day2.eventType, .menstrual)
+    }
+
+    func testMoveStartToAPastDayJoinsTheCycleBefore() {
+        let today = date(2026, 10, 20, hour: 0)
+        let start = date(2026, 10, 18, hour: 0)
+        var current = CycleGenerator.events(startDate: date(2026, 10, 16, hour: 0), cycleLength: 28)   // day 5 today
+        let tagged = current.firstIndex { calendar.isDate($0.date, inSameDayAs: date(2026, 10, 17, hour: 0)) }!
+        current[tagged].tags = "Mood:Tired"
+        let prevEvents = CycleGenerator.events(startDate: date(2026, 9, 18, hour: 0), cycleLength: 28)   // ends Oct 15
+        let previous = ArchivedDataBlock(date: date(2026, 10, 16), groupedEvents: Dictionary(grouping: prevEvents, by: \.eventType)
+            .map { ArchivedDataBlock.PhaseEvents(eventType: $0.key, events: $0.value) })
+
+        let plan = PeriodStartPlan.moveStart(events: current, blocks: [previous], start: start, cycleLength: 28, calendar: calendar)
+        let first = plan.events.min { $0.date < $1.date }!
+        XCTAssertTrue(calendar.isDate(first.date, inSameDayAs: start), "the cycle now starts on the chosen day")
+        XCTAssertFalse(plan.events.contains { $0.date < start })
+        XCTAssertTrue(plan.newArchive.isEmpty)
+        let blocks = try! XCTUnwrap(plan.blocks)
+        let all = blocks[0].groupedEvents.flatMap(\.events)
+        XCTAssertEqual(all.count, prevEvents.count + 2, "Oct 16 and 17 join the cycle before")
+        XCTAssertTrue(all.contains { $0.tags == "Mood:Tired" && $0.eventType == .luteal })
     }
 
     func testMoveStartReanchorsTheCycleWithoutArchivingATinyCycle() {
@@ -273,7 +392,7 @@ final class TodayHomeTests: XCTestCase {
         let previous = ArchivedDataBlock(date: date(2026, 10, 17), groupedEvents: Dictionary(grouping: prevEvents, by: \.eventType)
             .map { ArchivedDataBlock.PhaseEvents(eventType: $0.key, events: $0.value) })
 
-        let plan = PeriodStartPlan.moveStart(events: current + [meno], blocks: [previous], today: today,
+        let plan = PeriodStartPlan.moveStart(events: current + [meno], blocks: [previous], start: today,
                                              cycleLength: 28, calendar: calendar)
         let cycle = plan.events.filter { $0.effectiveMode != .menopause }
         XCTAssertEqual(cycle.count, 28)
@@ -299,13 +418,13 @@ final class TodayHomeTests: XCTestCase {
     func testMoveStartWithNoCycleBeforeKeepsOnlyTaggedDays() {
         let today = date(2026, 10, 20, hour: 0)
         var current = CycleGenerator.events(startDate: date(2026, 10, 17, hour: 0), cycleLength: 28)
-        let plain = PeriodStartPlan.moveStart(events: current, blocks: [], today: today, cycleLength: 28, calendar: calendar)
+        let plain = PeriodStartPlan.moveStart(events: current, blocks: [], start: today, cycleLength: 28, calendar: calendar)
         XCTAssertNil(plain.blocks)
         XCTAssertTrue(plain.newArchive.isEmpty, "untagged days before today are simply dropped")
 
         let tagged = current.firstIndex { calendar.isDate($0.date, inSameDayAs: date(2026, 10, 18, hour: 0)) }!
         current[tagged].tags = "Mood:Tired"
-        let plan = PeriodStartPlan.moveStart(events: current, blocks: [], today: today, cycleLength: 28, calendar: calendar)
+        let plan = PeriodStartPlan.moveStart(events: current, blocks: [], start: today, cycleLength: 28, calendar: calendar)
         XCTAssertEqual(plan.newArchive.map(\.tags), ["Mood:Tired"], "a tag is never lost")
         XCTAssertFalse(plan.events.contains { $0.date < today }, "nothing before today stays in the current cycle")
     }

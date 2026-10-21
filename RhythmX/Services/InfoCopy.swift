@@ -109,10 +109,10 @@ enum InfoCopy {
     // MARK: - Cycles
 
     static let newCycle = InfoTopic(
-        id: "cycles.newCycle", title: "Start a new cycle",
+        id: "cycles.newCycle", title: "Log period",
         paragraphs: [
-            "Pick the first day of your period and your usual cycle length. RhythmX fills in the four phases from that day.",
-            "If you already have events, you'll be asked whether to archive them first. Archived cycles move to Past cycles.",
+            "Pick the first day of your period, even if it was a few days ago, and your usual cycle length. RhythmX fills in the four phases from that day.",
+            "The days before that first day move to Past cycles as one finished cycle. Early in a cycle you can move the start instead, so a day logged by mistake leaves no tiny cycle behind. Tags you logged stay on their days.",
         ])
 
     static let freshStretch = InfoTopic(

@@ -94,7 +94,7 @@ enum OnboardingPeriodStart {
     static func plan(events: [Event], start: Date?, today: Date, calendar: Calendar = .current) -> PeriodStartPlan.Result? {
         guard let start, !hasCycleData(events),
               calendar.startOfDay(for: start) <= calendar.startOfDay(for: today) else { return nil }
-        return PeriodStartPlan.make(events: events, today: start, cycleLength: cycleLength, calendar: calendar)
+        return PeriodStartPlan.make(events: events, start: start, cycleLength: cycleLength, calendar: calendar)
     }
 
     /// What Continue on the last period page does. A period is logged only when the person actively chose a

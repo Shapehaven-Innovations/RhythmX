@@ -248,14 +248,16 @@ enum TodayMenopauseWeek {
 
 // MARK: - Log Period
 
-/// What "Log Period" on Today does: the cycle so far (days before today) moves to Past cycles, and a new
-/// cycle starts today with the same length. Tags already logged today or later are kept on the new cycle's
-/// day with the same date (combined, never overwritten), or as their own event when the new cycle has no such
-/// day. Menopause entries are never touched. Early in a cycle (`offersMoveStart`) the person can instead move
-/// the period start to today (`moveStart`), so a start logged by mistake does not leave a tiny Past cycle.
+/// What "Log Period" (on Today and in Cycles) does for a chosen first day, `start`: the cycle so far (days
+/// before the start) moves to Past cycles, and a new cycle starts on that day with the same length. Tags
+/// already logged on the start day or later are kept on the new cycle's day with the same date (combined,
+/// never overwritten), or as their own event when the new cycle has no such day. Menopause entries are never
+/// touched. Early in a cycle (`offersMoveStart`) the person can instead move the period start to the chosen
+/// day (`moveStart`), so a start logged by mistake does not leave a tiny Past cycle. The start is usually
+/// today, but a period that began a few days ago is logged on its real first day (`pickerRange`).
 enum PeriodStartPlan {
     struct Result: Equatable {
-        /// Cycle events dated before today, for `ArchivedDataStore.archiveCurrent(events:mode:)`.
+        /// Cycle events dated before the start, for `ArchivedDataStore.archiveCurrent(events:mode:)`.
         let archive: [Event]
         /// The full new event list, for `EventStore.replaceAll`.
         let events: [Event]
@@ -270,16 +272,128 @@ enum PeriodStartPlan {
         snapshot.cycleDay == 1 && snapshot.phase == .menstrual
     }
 
-    static func make(events: [Event], today: Date, cycleLength: Int, calendar: Calendar = .current) -> Result {
-        let todayStart = calendar.startOfDay(for: today)
+    static func make(events: [Event], start: Date, cycleLength: Int, calendar: Calendar = .current) -> Result {
+        let startDay = calendar.startOfDay(for: start)
         let menopause = events.filter { $0.effectiveMode == .menopause }
         let cycle = events.filter { $0.effectiveMode != .menopause }
-        let past = cycle.filter { calendar.startOfDay(for: $0.date) < todayStart }.sorted { $0.date < $1.date }
-        let carried = cycle.filter { calendar.startOfDay(for: $0.date) >= todayStart && !$0.tags.isEmpty }
+        let past = cycle.filter { calendar.startOfDay(for: $0.date) < startDay }.sorted { $0.date < $1.date }
+        let carried = cycle.filter { calendar.startOfDay(for: $0.date) >= startDay && !$0.tags.isEmpty }
 
-        let fresh = carryOver(carried, onto: CycleGenerator.events(startDate: todayStart, cycleLength: cycleLength),
+        let fresh = carryOver(carried, onto: CycleGenerator.events(startDate: startDay, cycleLength: cycleLength),
                               calendar: calendar)
         return Result(archive: past, events: menopause + fresh)
+    }
+
+    // MARK: The first day
+
+    /// How far back the first day can be picked.
+    static let daysBack = 60
+    static let cycleLengthRange = 20...45
+
+    /// The cycle length the sheet starts on: the person's average, else the current cycle's, else 28, within
+    /// `cycleLengthRange`.
+    static func defaultCycleLength(snapshot: PhaseWidgetSnapshot) -> Int {
+        min(max(snapshot.averageCycleLength ?? snapshot.cycleLength ?? 28, cycleLengthRange.lowerBound), cycleLengthRange.upperBound)
+    }
+
+    /// The first day of the current cycle (the earliest cycle event), nil with no cycle data.
+    static func currentCycleStart(events: [Event], calendar: Calendar = .current) -> Date? {
+        events.filter { $0.effectiveMode != .menopause }.map { calendar.startOfDay(for: $0.date) }.min()
+    }
+
+    /// The last day of the latest Past cycle (Menopause blocks left out), nil with none.
+    static func latestArchivedDay(blocks: [ArchivedDataBlock], calendar: Calendar = .current) -> Date? {
+        blocks.filter { $0.effectiveMode != .menopause }
+            .flatMap { $0.groupedEvents.flatMap(\.events) }
+            .map { calendar.startOfDay(for: $0.date) }
+            .max()
+    }
+
+    /// The days the first day can be: never after today, at most `daysBack` days ago, and never on or before
+    /// the last day of the latest Past cycle, so a new cycle cannot overlap a finished one.
+    static func pickerRange(today: Date, blocks: [ArchivedDataBlock], calendar: Calendar = .current) -> ClosedRange<Date> {
+        let end = calendar.startOfDay(for: today)
+        var floor = calendar.date(byAdding: .day, value: -daysBack, to: end) ?? end
+        if let last = latestArchivedDay(blocks: blocks, calendar: calendar),
+           let after = calendar.date(byAdding: .day, value: 1, to: last) {
+            floor = max(floor, after)
+        }
+        return min(floor, end)...end
+    }
+
+    /// `start` moved into `pickerRange`: a future day becomes today, a day too far back becomes the earliest day.
+    static func clampedStart(_ start: Date, today: Date, blocks: [ArchivedDataBlock], calendar: Calendar = .current) -> Date {
+        let range = pickerRange(today: today, blocks: blocks, calendar: calendar)
+        return min(max(calendar.startOfDay(for: start), range.lowerBound), range.upperBound)
+    }
+
+    // MARK: The offer
+
+    /// What the sheet offers for a chosen first day, with the consequence in plain words.
+    struct Offer: Equatable {
+        enum Action: Equatable, Identifiable {
+            case moveStart, startNewCycle
+            var id: Self { self }
+
+            var title: String {
+                switch self {
+                case .moveStart:     return "Move period start to this day"
+                case .startNewCycle: return "Start a new cycle"
+                }
+            }
+        }
+
+        /// The choices, main one first; empty when there is nothing to do (the cycle already starts that day).
+        let actions: [Action]
+        let message: String
+
+        var offersMoveStart: Bool { actions.contains(.moveStart) }
+    }
+
+    /// "today", "yesterday" or "Oct 18".
+    static func dayWord(_ day: Date, today: Date, calendar: Calendar = .current) -> String {
+        let back = calendar.dateComponents([.day], from: calendar.startOfDay(for: day), to: calendar.startOfDay(for: today)).day ?? 0
+        switch back {
+        case 0:  return "today"
+        case 1:  return "yesterday"
+        default: return TodayHero.monthDay(day, calendar: calendar)
+        }
+    }
+
+    /// The offer for `start`. With no cycle data the cycle simply starts that day. On the current cycle's first
+    /// day there is nothing to do. On day 2 to `moveStartMaxDay` of the current cycle the start can be moved
+    /// instead of a new cycle started; on a day before the current start the start moves back; later on, a new
+    /// cycle starts and the days before it become a Past cycle.
+    static func offer(events: [Event], start: Date, today: Date, calendar: Calendar = .current) -> Offer {
+        let startDay = calendar.startOfDay(for: start)
+        let word = dayWord(startDay, today: today, calendar: calendar)
+        let sentenceWord = word.prefix(1).uppercased() + word.dropFirst()
+        guard let cycleStart = currentCycleStart(events: events, calendar: calendar) else {
+            return Offer(actions: [.startNewCycle],
+                         message: "\(sentenceWord) becomes day 1 of your cycle. Predictions start from it, and tags you "
+                            + "logged from that day on stay.")
+        }
+        let day = (calendar.dateComponents([.day], from: cycleStart, to: startDay).day ?? 0) + 1
+        if day == 1 {
+            return Offer(actions: [], message: "Your cycle already starts \(word).")
+        }
+        if day < 1 {
+            return Offer(actions: [.moveStart],
+                         message: "Your current cycle started \(TodayHero.monthDay(cycleStart, calendar: calendar)). "
+                            + "Move its start to \(word): nothing is added to Past cycles and your tags stay on their days.")
+        }
+        if offersMoveStart(cycleDay: day) {
+            let ago = TodayHero.days(day - 1)
+            let moves = day == 2 ? "that day moves" : "those \(ago) move"
+            return Offer(actions: [.moveStart, .startNewCycle],
+                         message: "Your current cycle started on \(TodayHero.monthDay(cycleStart, calendar: calendar)). If that start was a mistake, move it "
+                            + "to \(word): nothing is added to Past cycles and your tags stay on their days. If a short "
+                            + "cycle really ended, start a new cycle: \(moves) to Past cycles as one cycle.")
+        }
+        return Offer(actions: [.startNewCycle],
+                     message: "\(sentenceWord) becomes day 1 of a new cycle. The days since your last period start move to "
+                        + "Past cycles as one finished cycle, and predictions use it. Tags you logged from that day on stay. "
+                        + "Picked the wrong day? Log Period again and move the start.")
     }
 
     // MARK: Carry over
@@ -312,8 +426,8 @@ enum PeriodStartPlan {
 
     // MARK: Move the period start
 
-    /// Early in a cycle (day 2 to 14) Log Period offers to move the current period start to today instead of
-    /// starting a new cycle, since a cycle that short is most likely a start logged by mistake.
+    /// Early in a cycle (day 2 to 14) Log Period offers to move the current period start to the chosen day
+    /// instead of starting a new cycle, since a cycle that short is most likely a start logged by mistake.
     static let moveStartMaxDay = 14
 
     static func offersMoveStart(cycleDay: Int?) -> Bool {
@@ -321,41 +435,29 @@ enum PeriodStartPlan {
         return cycleDay > 1 && cycleDay <= moveStartMaxDay
     }
 
-    /// The Log Period confirmation, in plain words, for the current cycle day.
-    static func confirmationMessage(cycleDay: Int?) -> String {
-        if offersMoveStart(cycleDay: cycleDay), let day = cycleDay {
-            let ago = TodayHero.days(day - 1)
-            return "Your current cycle started \(ago) ago. If that start was a mistake, move it to today: "
-                + "nothing is added to Past cycles and your tags stay on their days. If a short cycle really "
-                + "ended, start a new cycle: those \(ago) move to Past cycles as one cycle."
-        }
-        return "Today becomes day 1 of a new cycle. The days since your last period start move to Past cycles "
-            + "as one finished cycle, and predictions use it. Tags you logged today stay. You can change it later in Cycles."
-    }
-
     struct MoveResult {
         /// The full new event list, for `EventStore.replaceAll`.
         let events: [Event]
         /// The new archive list, for `ArchivedDataStore.replaceAll`; nil when the archive does not change.
         let blocks: [ArchivedDataBlock]?
-        /// Tagged days before today with no cycle before them to join, for `archiveCurrent(events:mode:)`;
+        /// Tagged days before the start with no cycle before them to join, for `archiveCurrent(events:mode:)`;
         /// empty when there is nothing to keep.
         let newArchive: [Event]
     }
 
-    /// "Move this period start to today": the current cycle starts again today with the same length. The days
-    /// before today were really the end of the cycle before, so when the latest Past cycle ends right before
+    /// "Move period start to this day": the current cycle starts again on `start` with the same length. The
+    /// days before it were really the end of the cycle before, so when the latest Past cycle ends right before
     /// them they join it as late luteal days (its length becomes right, nothing new appears in Past cycles).
     /// With no such cycle, untagged days are dropped and tagged ones are kept (`newArchive`) so no tag is lost.
-    /// Tags from today on carry over as in `make`. Menopause entries are never touched.
-    static func moveStart(events: [Event], blocks: [ArchivedDataBlock], today: Date, cycleLength: Int,
+    /// Tags from the start on carry over as in `make`. Menopause entries are never touched.
+    static func moveStart(events: [Event], blocks: [ArchivedDataBlock], start: Date, cycleLength: Int,
                           calendar: Calendar = .current) -> MoveResult {
-        let todayStart = calendar.startOfDay(for: today)
+        let startDay = calendar.startOfDay(for: start)
         let menopause = events.filter { $0.effectiveMode == .menopause }
         let cycle = events.filter { $0.effectiveMode != .menopause }
-        let before = cycle.filter { calendar.startOfDay(for: $0.date) < todayStart }.sorted { $0.date < $1.date }
-        let carried = cycle.filter { calendar.startOfDay(for: $0.date) >= todayStart && !$0.tags.isEmpty }
-        let fresh = carryOver(carried, onto: CycleGenerator.events(startDate: todayStart, cycleLength: cycleLength),
+        let before = cycle.filter { calendar.startOfDay(for: $0.date) < startDay }.sorted { $0.date < $1.date }
+        let carried = cycle.filter { calendar.startOfDay(for: $0.date) >= startDay && !$0.tags.isEmpty }
+        let fresh = carryOver(carried, onto: CycleGenerator.events(startDate: startDay, cycleLength: cycleLength),
                               calendar: calendar)
         let newEvents = menopause + fresh
 

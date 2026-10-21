@@ -93,7 +93,7 @@ struct InsightsView: View {
             Text("No Insights Yet")
                 .font(DS.Font.sectionHeader)
                 .foregroundColor(DS.Color.primaryText)
-            Text("Start a cycle in Cycles and log a few tags to see your patterns here.")
+            Text("Log your period from Today and log a few tags to see your patterns here.")
                 .font(DS.Font.label)
                 .foregroundColor(DS.Color.secondaryText)
                 .multilineTextAlignment(.center)

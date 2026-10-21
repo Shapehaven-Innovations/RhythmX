@@ -46,7 +46,7 @@ struct ArchivedDataView: View {
                     MoonPhaseView(phase: .waning, color: DS.Color.moon, isActive: true, size: 48)
                     Text("No past cycles yet")
                         .font(DS.Font.sectionHeader).foregroundColor(DS.Color.primaryText)
-                    Text("Archive a cycle from Cycles and it will appear here.")
+                    Text("Log your next period from Today or Cycles and the finished cycle will appear here.")
                         .font(DS.Font.label).foregroundColor(DS.Color.secondaryText)
                         .multilineTextAlignment(.center).padding(.horizontal, DS.Spacing.xl)
                 }

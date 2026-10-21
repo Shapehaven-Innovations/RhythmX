@@ -38,41 +38,23 @@ private struct PageScroll<Content: View>: View {
     }
 }
 
-/// A moon in moon colour: `lit` 1 is full, 0.5 half, 0 new; `waxing` lights the right side.
-struct OnboardingMoon: View {
-    let lit: Double
-    var waxing: Bool = true
-    let size: CGFloat
+/// The four phase moons of the welcome page (`MoonsWithHalo`), lighting in order on arrival.
+private struct OnboardingMoonRow: View {
+    var size: CGFloat = 34
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var active = 3
 
     var body: some View {
-        ZStack {
-            Circle().fill(DS.Color.primaryText.opacity(0.1))
-            Circle()
-                .fill(DS.Color.moon)
-                .mask {
-                    ZStack {
-                        Rectangle()
-                        Circle()
-                            .offset(x: (waxing ? -1 : 1) * size * lit)
-                            .blendMode(.destinationOut)
-                    }
-                    .compositingGroup()
+        MoonsWithHalo(active: active, size: size)
+            .frame(maxWidth: .infinity)
+            .task {
+                guard !reduceMotion else { return }
+                active = 0
+                for step in 1...3 {
+                    try? await Task.sleep(for: .milliseconds(320))
+                    withAnimation(.easeOut(duration: 0.5)) { active = step }
                 }
-        }
-        .frame(width: size, height: size)
-        .accessibilityHidden(true)
-    }
-}
-
-private struct Glint: View {
-    let size: CGFloat
-    var body: some View {
-        Canvas { ctx, canvasSize in
-            ctx.fill(AuraStarCanvas.glint(x: canvasSize.width / 2, y: canvasSize.height / 2, size: size),
-                     with: .color(DS.Color.moon.opacity(0.7)))
-        }
-        .frame(width: size * 3, height: size * 3)
-        .accessibilityHidden(true)
+            }
     }
 }
 
@@ -152,17 +134,8 @@ struct OnboardingModePage: View {
     var body: some View {
         PageScroll {
             if !dynamicTypeSize.isAccessibilitySize {
-                ZStack {
-                    HStack(spacing: -8) {
-                        OnboardingMoon(lit: 0.22, waxing: true, size: 60)
-                        OnboardingMoon(lit: 1, size: 92).zIndex(1)
-                        OnboardingMoon(lit: 0.22, waxing: false, size: 60)
-                    }
-                    Glint(size: 5).offset(x: -120, y: -50)
-                    Glint(size: 4).offset(x: 130, y: 50)
-                }
-                .frame(maxWidth: .infinity)
-                .frame(height: 170)
+                OnboardingMoonRow(size: 40)
+                    .frame(height: 150)
             }
             OnboardingTitle(page: .mode, titleFocused: titleFocused)
                 .padding(.top, DS.Spacing.md)
@@ -409,17 +382,8 @@ struct OnboardingMakeItYoursPage: View {
     var body: some View {
         PageScroll {
             if !dynamicTypeSize.isAccessibilitySize {
-                ZStack {
-                    HStack(spacing: -6) {
-                        OnboardingMoon(lit: 0.4, waxing: true, size: 44)
-                        OnboardingMoon(lit: 1, size: 68).zIndex(1)
-                        OnboardingMoon(lit: 0.4, waxing: false, size: 44)
-                    }
-                    Glint(size: 5).offset(x: -100, y: -26)
-                    Glint(size: 4).offset(x: 110, y: 30)
-                }
-                .frame(maxWidth: .infinity)
-                .frame(height: 104)
+                OnboardingMoonRow(size: 30)
+                    .frame(height: 96)
             }
             OnboardingTitle(page: .makeItYours, titleFocused: titleFocused)
                 .padding(.top, DS.Spacing.sm)

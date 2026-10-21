@@ -30,7 +30,7 @@ struct TodayView: View {
     @State private var addTagAfterDetail = false
     @State private var showAllInsights = false
     @State private var showShare = false
-    @State private var confirmPeriod = false
+    @State private var showLogPeriod = false
     @State private var periodLogged = 0
     /// Bumped at midnight (and other significant time changes) and when the app becomes active, so the
     /// insights are written again for the new day.
@@ -160,16 +160,9 @@ struct TodayView: View {
         .sheet(isPresented: $showAllInsights) {
             if let insights { DailyInsightsListView(insights: insights) }
         }
-        .confirmationDialog("Log your period starting today?", isPresented: $confirmPeriod, titleVisibility: .visible) {
-            if PeriodStartPlan.offersMoveStart(cycleDay: snapshot.cycleDay) {
-                Button("Move this period start to today") { movePeriodStartToToday(snapshot: snapshot) }
-                Button("Start a new cycle") { logPeriodToday(snapshot: snapshot) }
-            } else {
-                Button("Start a new cycle") { logPeriodToday(snapshot: snapshot) }
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text(PeriodStartPlan.confirmationMessage(cycleDay: snapshot.cycleDay))
+        // The first day, the length and the consequence live in the shared sheet (also opened from Cycles).
+        .sheet(isPresented: $showLogPeriod) {
+            LogPeriodSheet(now: now) { periodLogged += 1 }
         }
         .sensoryFeedback(.success, trigger: periodLogged)
         .task(id: insightsKey) { await loadInsights() }
@@ -347,36 +340,10 @@ struct TodayView: View {
 
     private func perform(_ action: TodayHero.Action) {
         switch action {
-        case .logPeriod:   confirmPeriod = true
+        case .logPeriod:   showLogPeriod = true
         case .logTest:     tagForm = TagFormRoute(category: .planning)
         case .logSymptoms: tagForm = TagFormRoute(category: .menopause)
         }
-    }
-
-    /// The cycle so far goes to Past cycles and a new cycle starts today (`PeriodStartPlan`), through the
-    /// stores' own archive and replace calls.
-    private func logPeriodToday(snapshot: PhaseWidgetSnapshot) {
-        let length = min(max(snapshot.averageCycleLength ?? snapshot.cycleLength ?? 28, 20), 45)
-        let plan = PeriodStartPlan.make(events: myEvents.events, today: today, cycleLength: length)
-        archivedDataStore.archiveCurrent(events: plan.archive, mode: mode == .planning ? .planning : .cycle)
-        myEvents.replaceAll(plan.events)
-        myEvents.reloadCalendarIcons()
-        periodLogged += 1
-    }
-
-    /// The current period start was a mistake: the cycle starts again today and nothing is added to Past
-    /// cycles (`PeriodStartPlan.moveStart`).
-    private func movePeriodStartToToday(snapshot: PhaseWidgetSnapshot) {
-        let length = min(max(snapshot.averageCycleLength ?? 28, 20), 45)
-        let plan = PeriodStartPlan.moveStart(events: myEvents.events, blocks: archivedDataStore.archivedBlocks,
-                                             today: today, cycleLength: length)
-        if let blocks = plan.blocks { archivedDataStore.replaceAll(blocks) }
-        if !plan.newArchive.isEmpty {
-            archivedDataStore.archiveCurrent(events: plan.newArchive, mode: mode == .planning ? .planning : .cycle)
-        }
-        myEvents.replaceAll(plan.events)
-        myEvents.reloadCalendarIcons()
-        periodLogged += 1
     }
 
     // MARK: - Loading

@@ -89,7 +89,7 @@ struct PlanningInsightsView: View {
             let days = Calendar.current.dateComponents([.day], from: today.startOfDay, to: window.lowerBound).day ?? 0
             return ("Fertile window", days == 1 ? "Opens tomorrow" : "Opens in \(days) days", windowText(window))
         }
-        return ("Likely ovulation", "Passed", ovulationDate.map { "Was \($0)" } ?? "Start a new cycle in Cycles")
+        return ("Likely ovulation", "Passed", ovulationDate.map { "Was \($0)" } ?? "Log your period in Cycles when it starts")
     }
 
     private func windowText(_ window: ClosedRange<Date>) -> String {
@@ -136,7 +136,7 @@ struct PlanningInsightsView: View {
                     .font(DS.Font.sectionHeader)
                     .foregroundColor(DS.Color.primaryText)
             }
-            Text("Start a cycle in the Cycles tab. Your fertile window, likely ovulation day and the two-week wait will appear here.")
+            Text("Log your period's first day with Log period in Cycles. Your fertile window, likely ovulation day and the two-week wait will appear here.")
                 .font(DS.Font.caption)
                 .foregroundColor(DS.Color.secondaryText)
             Text("Then log Basal Temp and Ovulation Test tags from a day in the Calendar or from the Tags tab.")

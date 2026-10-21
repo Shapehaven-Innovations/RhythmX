@@ -93,7 +93,7 @@ struct ShareRhythmView: View {
     private var emptyCard: some View {
         VStack(alignment: .leading, spacing: DS.Spacing.xs) {
             Text("Nothing to share yet").font(DS.Font.sectionHeader).foregroundColor(DS.Color.primaryText)
-            Text("Start a cycle in Cycles first. Your cards appear here.")
+            Text("Log your period from Today first. Your cards appear here.")
                 .font(DS.Font.caption).foregroundColor(DS.Color.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
         }

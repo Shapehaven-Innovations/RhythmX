@@ -57,7 +57,7 @@ final class OnboardingFlowTests: XCTestCase {
     func testAChosenDateOnAnEmptyPhoneStartsACycleThroughTheLogPeriodPlan() throws {
         let start = calendar.date(byAdding: .day, value: -25, to: today)!
         let plan = try XCTUnwrap(OnboardingPeriodStart.plan(events: [], start: start, today: today))
-        let expected = PeriodStartPlan.make(events: [], today: start, cycleLength: 28)
+        let expected = PeriodStartPlan.make(events: [], start: start, cycleLength: 28)
         XCTAssertEqual(plan.events.count, expected.events.count)
         XCTAssertTrue(plan.archive.isEmpty)
         XCTAssertEqual(calendar.startOfDay(for: plan.events.map(\.date).min()!), calendar.startOfDay(for: start))
