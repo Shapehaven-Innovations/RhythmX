@@ -112,7 +112,7 @@
               "locale" : "en_US"
             }
           ],
-          "productID" : "beta.Rhythm.plus.monthly",
+          "productID" : "beta.Rhythm.plus.1month",
           "recurringSubscriptionPeriod" : "P1M",
           "referenceName" : "Plus Monthly",
           "subscriptionGroupID" : "6480000100",

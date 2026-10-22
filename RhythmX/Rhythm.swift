@@ -20,6 +20,8 @@ struct AppEntry: App {
 
     @State private var showSplash = true
     @State private var incomingBackup: IncomingBackup?
+    /// The promoted In-App Purchase the paywall sheet is up for, if any: picks the plan and the Day Pass card.
+    @State private var promotedPurchase: PurchaseStore.PromotedPurchase?
 
     init() {
         LegacySnapshot.writeIfNeeded()   // raw pre-migration copy, before any store loads or migration runs
@@ -73,10 +75,18 @@ struct AppEntry: App {
                     .environmentObject(archivedDataStore)
                     .environmentObject(appSettings)
             }
-            // The single paywall sheet. Settings sets the same flag, so the two can never collide.
-            .sheet(isPresented: $purchaseStore.isPaywallPresented) {
-                PaywallView().environmentObject(purchaseStore)
+            // The single paywall sheet. Settings sets the same flag, so the two can never collide. A promoted
+            // purchase opens it with that plan selected (or the Day Pass card); the next opening is plain again.
+            .sheet(isPresented: $purchaseStore.isPaywallPresented, onDismiss: { promotedPurchase = nil }) {
+                PaywallView(showsDayPass: promotedPurchase == .dayPass,
+                            plan: promotedPurchase == .plus(yearly: false) ? .monthly : .yearly)
+                    .environmentObject(purchaseStore)
             }
+            // A promoted In-App Purchase tapped on the App Store, whether it launched the app or arrived while
+            // it was running. Held until the splash is gone and onboarding is finished, so neither is skipped.
+            .onChange(of: purchaseStore.pendingPromotedProduct?.id) { _, _ in presentPromotedPurchaseIfReady() }
+            .onChange(of: showSplash) { _, _ in presentPromotedPurchaseIfReady() }
+            .onChange(of: didFinishOnboarding) { _, _ in presentPromotedPurchaseIfReady() }
             .onChange(of: scenePhase) { _, phase in
                 // No exported backup file lingers in the temporary directory once the app is in the background.
                 if phase == .background { BackupViewModel.clearExports() }
@@ -126,6 +136,17 @@ struct AppEntry: App {
                                      isPlus: purchaseStore.isPlus,
                                      verified: purchaseStore.entitlementVerifiedThisSession,
                                      withinGrace: purchaseStore.isWithinPlusGrace)
+    }
+
+    /// Takes the pending promoted purchase once the main UI is showing and opens the paywall for it. A product
+    /// the paywall does not sell, or Plus already active, drops the request without a word; the purchase itself
+    /// goes through the paywall's normal Subscribe button, never silently.
+    private func presentPromotedPurchaseIfReady() {
+        guard !showSplash, didFinishOnboarding, let product = purchaseStore.pendingPromotedProduct else { return }
+        purchaseStore.pendingPromotedProduct = nil
+        guard let promoted = PurchaseStore.promotedPurchase(for: product.id, isPlus: purchaseStore.isPlus) else { return }
+        promotedPurchase = promoted
+        purchaseStore.isPaywallPresented = true
     }
 
     static let isRunningTests: Bool =

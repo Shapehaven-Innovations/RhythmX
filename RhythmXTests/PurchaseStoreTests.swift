@@ -128,7 +128,7 @@ final class PurchaseStoreTests: XCTestCase {
         XCTAssertEqual(monthly.subscription?.subscriptionPeriod, .monthly)
         XCTAssertEqual(yearly.subscription?.subscriptionPeriod, .yearly)
         XCTAssertEqual(monthly.subscription?.subscriptionGroupID, yearly.subscription?.subscriptionGroupID, "one subscription group")
-        XCTAssertEqual(PurchaseStore.ProductID.monthly, "beta.Rhythm.plus.monthly")
+        XCTAssertEqual(PurchaseStore.ProductID.monthly, "beta.Rhythm.plus.1month")
         XCTAssertEqual(PurchaseStore.ProductID.yearly, "beta.Rhythm.plus.yearly")
         XCTAssertEqual(PurchaseStore.ProductID.dayPass, "beta.Rhythm.pdf.daypass")
     }
@@ -427,6 +427,44 @@ final class PurchaseStoreTests: XCTestCase {
         XCTAssertNil(store.plusRenewalState)
         try await session.setSimulatedError(nil, forAPI: .subscriptionStatus)
         try await session.setSimulatedError(nil, forAPI: .loadProducts)
+    }
+
+    // MARK: Promoted In-App Purchases (App Store product page)
+
+    /// A `PurchaseIntent` cannot be made in a test, so the decision it feeds is pinned on its own: the paywall
+    /// opens with the promoted plan selected, the Day Pass card for the pass, and nothing for anything else.
+    func testPromotedPurchaseSelectsThePaywallPlan() {
+        XCTAssertEqual(PurchaseStore.promotedPurchase(for: PurchaseStore.ProductID.yearly, isPlus: false), .plus(yearly: true))
+        XCTAssertEqual(PurchaseStore.promotedPurchase(for: PurchaseStore.ProductID.monthly, isPlus: false), .plus(yearly: false))
+        XCTAssertEqual(PurchaseStore.promotedPurchase(for: PurchaseStore.ProductID.dayPass, isPlus: false), .dayPass)
+        XCTAssertNil(PurchaseStore.promotedPurchase(for: "beta.Rhythm.plus.lifetime", isPlus: false), "not sold by the paywall")
+        XCTAssertNil(PurchaseStore.promotedPurchase(for: "", isPlus: false))
+    }
+
+    func testPromotedPurchaseIsDroppedWhilePlusIsActive() {
+        for id in PurchaseStore.ProductID.all {
+            XCTAssertNil(PurchaseStore.promotedPurchase(for: id, isPlus: true), "\(id): Plus is active, nothing to sell")
+        }
+    }
+
+    func testPendingPromotedPurchaseIsHeldUntilTakenAndNeverBuys() async throws {
+        let store = makeStore()
+        XCTAssertNil(store.pendingPromotedProduct, "nothing pending at launch")
+        await store.loadProducts()
+        let monthly = try XCTUnwrap(store.monthly)
+
+        // What the intents listener records: the request waits (over the splash or onboarding) as the product.
+        store.pendingPromotedProduct = monthly
+        XCTAssertEqual(store.pendingPromotedProduct?.id, PurchaseStore.ProductID.monthly)
+        XCTAssertFalse(store.isPaywallPresented, "the paywall is AppEntry's to open, once the main UI is up")
+        XCTAssertEqual(session.allTransactions().count, 0, "a promoted purchase never buys by itself")
+
+        // AppEntry takes it: cleared, decided, and the paywall opened for the user to confirm.
+        let promoted = PurchaseStore.promotedPurchase(for: monthly.id, isPlus: store.isPlus)
+        store.pendingPromotedProduct = nil
+        XCTAssertEqual(promoted, .plus(yearly: false))
+        XCTAssertNil(store.pendingPromotedProduct)
+        XCTAssertEqual(session.allTransactions().count, 0)
     }
 
     // MARK: Transaction.updates

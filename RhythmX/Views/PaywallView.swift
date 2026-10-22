@@ -118,12 +118,19 @@ struct PaywallView: View {
     /// Show the Day Pass card. On when PDF export opened the paywall.
     var showsDayPass = false
 
+    /// - Parameter plan: the plan selected when the paywall opens. Yearly, except for a promoted In-App
+    ///   Purchase of the monthly plan; the user still confirms with the Subscribe button.
+    init(showsDayPass: Bool = false, plan: Plan = .yearly) {
+        self.showsDayPass = showsDayPass
+        _plan = State(initialValue: plan)
+    }
+
     @EnvironmentObject private var purchaseStore: PurchaseStore
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    @State private var plan: Plan = .yearly
+    @State private var plan: Plan
     @State private var isWorking = false
     @State private var message: String?
     @State private var errorMessage: String?

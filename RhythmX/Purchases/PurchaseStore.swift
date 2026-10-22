@@ -10,7 +10,7 @@ import UIKit
 @MainActor
 final class PurchaseStore: ObservableObject {
     enum ProductID {
-        static let monthly = "beta.Rhythm.plus.monthly"
+        static let monthly = "beta.Rhythm.plus.1month"
         static let yearly = "beta.Rhythm.plus.yearly"
         static let dayPass = "beta.Rhythm.pdf.daypass"
         static let plus: Set<String> = [monthly, yearly]
@@ -49,6 +49,28 @@ final class PurchaseStore: ObservableObject {
     /// this instead of presenting their own sheet, so two presenters can never collide; a second request while
     /// the sheet is already up changes nothing.
     @Published var isPaywallPresented = false
+    /// A promoted In-App Purchase tapped on the App Store (`PurchaseIntent.intents`), waiting for the app to show
+    /// the paywall for it. `AppEntry` takes it once the main UI is up (never over the splash or onboarding) and
+    /// clears it; nothing is bought until the user confirms on the paywall.
+    @Published var pendingPromotedProduct: Product?
+
+    /// What a promoted purchase asks the paywall to offer.
+    enum PromotedPurchase: Equatable {
+        case plus(yearly: Bool)
+        case dayPass
+    }
+
+    /// The paywall request for a promoted purchase of `productID`, or nil when there is nothing to present: a
+    /// product the paywall does not sell, or Plus already active (the paywall would only say so).
+    static func promotedPurchase(for productID: String, isPlus: Bool) -> PromotedPurchase? {
+        guard !isPlus else { return nil }
+        switch productID {
+        case ProductID.yearly: return .plus(yearly: true)
+        case ProductID.monthly: return .plus(yearly: false)
+        case ProductID.dayPass: return .dayPass
+        default: return nil
+        }
+    }
 
     var monthly: Product? { products.first { $0.id == ProductID.monthly } }
     var yearly: Product? { products.first { $0.id == ProductID.yearly } }
@@ -71,10 +93,11 @@ final class PurchaseStore: ObservableObject {
     private let calendar: Calendar
     private let now: () -> Date
     private var updatesTask: Task<Void, Never>?
+    private var intentsTask: Task<Void, Never>?
 
     /// - Parameters:
-    ///   - listensForUpdates: starts the `Transaction.updates` listener for the lifetime of the store. Off in tests
-    ///     that drive the queue by hand.
+    ///   - listensForUpdates: starts the `Transaction.updates` and `PurchaseIntent.intents` listeners for the
+    ///     lifetime of the store. Off in tests that drive the queue by hand.
     init(defaults: UserDefaults = AppGroup.defaults,
          calendar: Calendar = .current,
          now: @escaping () -> Date = Date.init,
@@ -90,10 +113,21 @@ final class PurchaseStore: ObservableObject {
                     await self.handle(result)
                 }
             }
+            // Promoted In-App Purchases. Consumed from init so a tap that launched the app (the intent is
+            // buffered until the first reader) is not missed; `AppEntry` presents the paywall for it.
+            intentsTask = Task { [weak self] in
+                for await intent in PurchaseIntent.intents {
+                    guard let self else { return }
+                    self.pendingPromotedProduct = intent.product
+                }
+            }
         }
     }
 
-    deinit { updatesTask?.cancel() }
+    deinit {
+        updatesTask?.cancel()
+        intentsTask?.cancel()
+    }
 
     // MARK: Launch
 

@@ -1,4 +1,5 @@
 import SwiftUI
+import StoreKitTest
 import XCTest
 @testable import RhythmX
 
@@ -146,5 +147,25 @@ final class TodayScreenshotTests: XCTestCase {
         settings.themeID = AppTheme.eclipse.id
         try snap(SplashView(onFinish: {}).environmentObject(settings), style: .dark, name: "splash--eclipse-dark",
                  folder: folder, wait: 1.4)
+    }
+
+    /// The paywall with real StoreKit products (local `RhythmX.storekit`), for App Store Connect review.
+    func testWritesPaywallScreenshotForReview() async throws {
+        guard let dir = ProcessInfo.processInfo.environment["RHYTHMX_SCREENSHOT_DIR"], !dir.isEmpty else {
+            throw XCTSkip("set TEST_RUNNER_RHYTHMX_SCREENSHOT_DIR to write review screenshots")
+        }
+        let folder = URL(fileURLWithPath: dir, isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let url = try XCTUnwrap(Bundle(for: TodayScreenshotTests.self).url(forResource: "RhythmX", withExtension: "storekit"))
+        let session = try SKTestSession(contentsOf: url)
+        session.resetToDefaultState()
+        session.disableDialogs = true
+        let store = PurchaseStore(listensForUpdates: false)
+        await store.loadProducts()
+        let settings = AppSettings()
+        try snap(PaywallView().environmentObject(store).environmentObject(settings), style: .light,
+                 name: "paywall--blush-light", folder: folder, wait: 2)
+        try snap(PaywallView(showsDayPass: true).environmentObject(store).environmentObject(settings), style: .light,
+                 name: "paywall-daypass--blush-light", folder: folder, wait: 2)
     }
 }
