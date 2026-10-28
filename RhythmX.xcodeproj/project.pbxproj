@@ -1470,7 +1470,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = RhythmX/RhythmXDebugSimulator.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_ASSET_PATHS = "\"RhythmX/Preview Content\"";
 				DEVELOPMENT_TEAM = P9Z5QB8965;
 				ENABLE_PREVIEWS = YES;
@@ -1509,7 +1509,7 @@
 				CODE_SIGN_ENTITLEMENTS = RhythmX/RhythmX.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_ASSET_PATHS = "\"RhythmX/Preview Content\"";
 				DEVELOPMENT_TEAM = P9Z5QB8965;
 				ENABLE_PREVIEWS = YES;
