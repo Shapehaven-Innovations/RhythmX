@@ -19,6 +19,7 @@ enum TagParser {
 
     /// Display text: everything after the first colon, trimmed. No colon returns the raw tag.
     static func label(for raw: String) -> String {
+        if let skin = SkinTag.parse(raw) { return skin.displayLabel }
         let parts = raw.split(separator: ":", maxSplits: 1)
         guard parts.count == 2 else { return raw.trimmingCharacters(in: .whitespacesAndNewlines) }
         return parts[1].trimmingCharacters(in: .whitespacesAndNewlines)

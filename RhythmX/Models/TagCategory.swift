@@ -15,4 +15,6 @@ enum TagCategory: String, CaseIterable, Codable {
     case other          = "Other"
     case planning       = "Planning"
     case menopause      = "Menopause"
+    case skin           = "Skin"
+    case intimacy       = "Intimacy"
 }

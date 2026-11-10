@@ -68,7 +68,7 @@ enum QuickLogWriter {
         let raw = "\(category.rawValue):\(value.trimmingCharacters(in: .whitespacesAndNewlines))"
         let day = date.startOfDay
         if !TagLibrary.isRepeatable(category, value),
-           events.contains(where: { $0.date.startOfDay == day && TagParser.split($0.tags).contains(raw) }) {
+           events.contains(where: { $0.date.startOfDay == day && !TagLibrary.equivalent(raw).isDisjoint(with: TagParser.split($0.tags)) }) {
             return false
         }
         let sameDay = events.indices.filter { events[$0].date.startOfDay == day }

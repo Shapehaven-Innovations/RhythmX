@@ -31,11 +31,11 @@ final class ModeTagTests: XCTestCase {
 
     func testCategoriesPerMode() {
         XCTAssertEqual(TagLibrary.categories(for: .cycle),
-                       [.symptom, .mood, .dietary, .exercise, .medication, .cervicalMucus, .basalTemp, .other])
+                       [.symptom, .mood, .dietary, .exercise, .medication, .cervicalMucus, .basalTemp, .other] + [.skin, .intimacy])
         XCTAssertEqual(TagLibrary.categories(for: .planning),
-                       [.planning, .cervicalMucus, .basalTemp, .mood, .symptom, .medication, .other])
+                       [.planning, .cervicalMucus, .basalTemp, .mood, .symptom, .medication, .other] + [.skin, .intimacy])
         XCTAssertEqual(TagLibrary.categories(for: .menopause),
-                       [.menopause, .mood, .symptom, .medication, .other])
+                       [.menopause, .mood, .symptom, .medication, .other] + [.skin, .intimacy])
     }
 
     func testLibraryTagsForModeCategories() {
@@ -47,7 +47,26 @@ final class ModeTagTests: XCTestCase {
                         "Vaginal Dryness", "Low Libido", "Heart Palpitations"])
         // Existing categories are unchanged, so stored tags keep their meaning.
         XCTAssertEqual(TagLibrary.tags[.other],
-                       ["Poor Sleep", "Acne", "Water Retention", "Hot Flashes", "Night Sweats", "Mild Cramping"])
+                       ["Poor Sleep", "Water Retention", "Hot Flashes", "Night Sweats", "Mild Cramping"])
+        XCTAssertEqual(TagLibrary.tags[.intimacy], ["Sex"])
+        XCTAssertEqual(TagLibrary.tags[.skin], [])
+    }
+
+    func testRawValuesForSkinAndIntimacy() {
+        XCTAssertEqual(TagCategory.skin.rawValue, "Skin")
+        XCTAssertEqual(TagCategory.intimacy.rawValue, "Intimacy")
+        let all = TagCategory.allCases
+        XCTAssertTrue(all.contains(.skin) && all.contains(.intimacy))
+        XCTAssertGreaterThan(all.firstIndex(of: .skin)!, all.firstIndex(of: .menopause)!)
+        XCTAssertGreaterThan(all.firstIndex(of: .intimacy)!, all.firstIndex(of: .menopause)!)
+    }
+
+    func testEquivalentTags() {
+        let both: Set<String> = ["Intimacy:Sex", "Planning:Intercourse"]
+        XCTAssertEqual(TagLibrary.equivalent("Intimacy:Sex"), both)
+        XCTAssertEqual(TagLibrary.equivalent("Planning:Intercourse"), both)
+        XCTAssertEqual(TagLibrary.equivalent(" Planning:Intercourse "), both)
+        XCTAssertEqual(TagLibrary.equivalent("Symptom:Cramps"), ["Symptom:Cramps"])
     }
 
     // MARK: - Repeatable tags

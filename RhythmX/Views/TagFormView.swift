@@ -75,10 +75,19 @@ struct TagFormView: View {
                         if isSearching {
                             searchResults
                         } else {
-                            suggestedRow
-                            recentRow
+                            // Skin puts the rows after its body, so the map sits right under the strip and
+                            // the Add bar never covers it. The strip keeps one place so its scroll position holds.
+                            let rowsFollow = TagFormLogic.suggestionsFollowBody(category: category)
+                            if !rowsFollow {
+                                suggestedRow
+                                recentRow
+                            }
                             categoryStrip(proxy: proxy)
                             categoryBody
+                            if rowsFollow {
+                                suggestedRow
+                                recentRow
+                            }
                         }
                     }
                     .padding(.top, 14)
@@ -103,13 +112,7 @@ struct TagFormView: View {
         .onAppear {
             if !didPickInitialCategory {
                 didPickInitialCategory = true
-                category = initialCategory ?? modeCategories.first ?? .dietary
-                // Archive-based pre-selection is a cycle habit; other modes start on their own category,
-                // and a requested category is kept.
-                if appSettings.trackingMode == .cycle && initialCategory == nil,
-                   let top = TagFormLogic.topCategory(phase: currentPhaseType, blocks: archivedDataStore.cycleBlocks) {
-                    category = top
-                }
+                category = initialCategory ?? TagFormLogic.defaultCategory(for: mode)
                 selection = initialSelection
                 query = initialQuery
                 customCategory = TagFormLogic.customCategories(for: mode).first ?? .symptom
@@ -158,6 +161,9 @@ struct TagFormView: View {
 
     /// Tags already stored on the chosen day.
     private var loggedOnDay: [String] { dayEvents.flatMap { TagParser.split($0.tags) } }
+
+    /// Skin entries already stored on the chosen day (the dots on the skin map).
+    private var loggedSkinToday: [SkinTag] { loggedOnDay.compactMap(SkinTag.parse) }
 
     /// A normal tag already on the day cannot be logged again (`EventStore.isDuplicateTag`).
     private func isAlreadyLogged(_ pick: TagPick) -> Bool {
@@ -210,15 +216,49 @@ struct TagFormView: View {
                                     phase: currentPhaseType, mode: mode)
     }
 
+    /// At accessibility sizes the close and confirm buttons sit on their own row above the title, so the
+    /// title and day get the full width.
+    @ViewBuilder
     private var header: some View {
-        HStack(alignment: .center, spacing: DS.Spacing.sm) {
-            Button { dismiss() } label: {
-                Image(systemName: "xmark").font(.body.weight(.semibold)).frame(width: 30, height: 30)
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(spacing: DS.Spacing.sm) {
+                HStack {
+                    closeButton
+                    Spacer()
+                    confirmButton
+                }
+                headerTitle
             }
-            .buttonStyle(.glass)
-            .buttonBorderShape(.circle)
-            .accessibilityLabel("Close")
+        } else {
+            HStack(alignment: .center, spacing: DS.Spacing.sm) {
+                closeButton
+                headerTitle
+                confirmButton
+            }
+        }
+    }
 
+    private var closeButton: some View {
+        Button { dismiss() } label: {
+            Image(systemName: "xmark").font(.body.weight(.semibold)).frame(width: 30, height: 30)
+        }
+        .buttonStyle(.glass)
+        .buttonBorderShape(.circle)
+        .accessibilityLabel("Close")
+    }
+
+    private var confirmButton: some View {
+        Button(action: save) {
+            Image(systemName: "checkmark").font(.body.weight(.bold)).frame(width: 30, height: 30)
+        }
+        .buttonStyle(.glassProminent)
+        .buttonBorderShape(.circle)
+        .tint(DS.Color.accent)
+        .disabled(!canSave)
+        .accessibilityLabel(TagFormLogic.addButtonTitle(count: pickCount))
+    }
+
+    private var headerTitle: some View {
             VStack(spacing: 2) {
                 Text("Add Tags")
                     .font(.headline)
@@ -246,16 +286,6 @@ struct TagFormView: View {
                 }
             }
             .frame(maxWidth: .infinity)
-
-            Button(action: save) {
-                Image(systemName: "checkmark").font(.body.weight(.bold)).frame(width: 30, height: 30)
-            }
-            .buttonStyle(.glassProminent)
-            .buttonBorderShape(.circle)
-            .tint(DS.Color.accent)
-            .disabled(!canSave)
-            .accessibilityLabel(TagFormLogic.addButtonTitle(count: pickCount))
-        }
     }
 
     private var noCycleDayNote: some View {
@@ -319,7 +349,7 @@ struct TagFormView: View {
     private func searchRow(_ pick: TagPick) -> some View {
         HStack(spacing: 12) {
             RowIconSquare(symbol: TagGlyph.symbol(for: pick), color: DS.Color.accent.opacity(0.75))
-            Text(pick.value).font(.body).foregroundColor(DS.Color.primaryText)
+            Text(TagFormLogic.displayLabel(pick)).font(.body).foregroundColor(DS.Color.primaryText)
                 .frame(maxWidth: .infinity, alignment: .leading)
             if TagFormLogic.supportsIntensity(pick) {
                 MoonIntensityControl(label: pick.value, level: selection.intensity(of: pick)) { setLevel(pick, $0) }
@@ -404,7 +434,9 @@ struct TagFormView: View {
 
     /// The archive part of the Smart Tags: what she logged in this phase of past cycles.
     private var historyPicks: [TagPick] {
-        let history = Set(TagFormLogic.historyTags(phase: currentPhaseType, blocks: archivedDataStore.cycleBlocks))
+        // Menopause has no cycle phases, so no phase history either.
+        let phase = mode == .menopause ? nil : currentPhaseType
+        let history = Set(TagFormLogic.historyTags(phase: phase, blocks: archivedDataStore.cycleBlocks))
         return smartTags.filter { history.contains($0) }.map(TagFormLogic.pick(fromRaw:))
     }
 
@@ -434,23 +466,31 @@ struct TagFormView: View {
             .foregroundColor(DS.Color.secondaryText)
             .accessibilityAddTraits(.isHeader)
             .padding(.horizontal, DS.Spacing.md)
-            ScrollView(.horizontal) {
-                HStack(spacing: DS.Spacing.sm) {
+            if dynamicTypeSize.isAccessibilitySize {
+                // Large text wraps the chips instead of running them off the edge.
+                FlowLayout(spacing: DS.Spacing.sm) {
                     ForEach(picks) { pick in chip(pick) }
                 }
+                .padding(.horizontal, DS.Spacing.md)
+            } else {
+                ScrollView(.horizontal) {
+                    HStack(spacing: DS.Spacing.sm) {
+                        ForEach(picks) { pick in chip(pick) }
+                    }
+                }
+                .contentMargins(.horizontal, DS.Spacing.md, for: .scrollContent)
+                .scrollIndicators(.hidden)
             }
-            .contentMargins(.horizontal, DS.Spacing.md, for: .scrollContent)
-            .scrollIndicators(.hidden)
         }
     }
 
     private func chip(_ pick: TagPick, showCategory: Bool = false) -> some View {
-        SheetChip(label: pick.value,
+        SheetChip(label: TagFormLogic.displayLabel(pick),
                   symbol: showCategory ? pick.category.symbolName : nil,
                   isSelected: selection.contains(pick),
                   isLogged: isAlreadyLogged(pick),
                   count: selection.count(of: pick)) { tap(pick) }
-            .accessibilityLabel("\(pick.value), \(pick.category.rawValue)")
+            .accessibilityLabel("\(TagFormLogic.displayLabel(pick)), \(pick.category.rawValue)")
             .accessibilityHint(pick.isRepeatable ? "Adds one more. Can be logged more than once a day." : "")
     }
 
@@ -469,8 +509,26 @@ struct TagFormView: View {
         modeCategories.contains(category) ? modeCategories : modeCategories + [category]
     }
 
+    /// At accessibility sizes the grid button moves to its own row under the strip, so it no longer
+    /// covers the last category chip.
+    @ViewBuilder
     private func categoryStrip(proxy: ScrollViewProxy) -> some View {
-        HStack(spacing: 0) {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+                categoryScroller(proxy: proxy)
+                allCategoriesMenu
+                    .padding(.horizontal, DS.Spacing.md)
+            }
+        } else {
+            HStack(spacing: 0) {
+                categoryScroller(proxy: proxy)
+                allCategoriesMenu
+                    .padding(.trailing, DS.Spacing.md)
+            }
+        }
+    }
+
+    private func categoryScroller(proxy: ScrollViewProxy) -> some View {
             ScrollView(.horizontal) {
                 HStack(spacing: DS.Spacing.sm) {
                     ForEach(stripCategories, id: \.self) { categoryChip($0) }
@@ -482,9 +540,6 @@ struct TagFormView: View {
             .onChange(of: category) { _, new in
                 if reduceMotion { proxy.scrollTo(new, anchor: .center) } else { withAnimation { proxy.scrollTo(new, anchor: .center) } }
             }
-            allCategoriesMenu
-                .padding(.trailing, DS.Spacing.md)
-        }
     }
 
     private func categoryChip(_ cat: TagCategory) -> some View {
@@ -533,13 +588,20 @@ struct TagFormView: View {
                 }
             }
         } label: {
-            Image(systemName: "square.grid.2x2")
-                .font(.subheadline.weight(.semibold))
-                .foregroundColor(DS.Color.accent)
-                .frame(width: 36, height: 36)
-                .background(Circle().fill(DS.Color.cardBackground))
-                .overlay(Circle().strokeBorder(DS.Color.primaryText.opacity(0.1), lineWidth: 1))
-                .frame(width: 44, height: 44)
+            if dynamicTypeSize.isAccessibilitySize {
+                Label("All categories", systemImage: "square.grid.2x2")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(DS.Color.accent)
+                    .frame(minHeight: 44)
+            } else {
+                Image(systemName: "square.grid.2x2")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(DS.Color.accent)
+                    .frame(width: 36, height: 36)
+                    .background(Circle().fill(DS.Color.cardBackground))
+                    .overlay(Circle().strokeBorder(DS.Color.primaryText.opacity(0.1), lineWidth: 1))
+                    .frame(width: 44, height: 44)
+            }
         }
         .accessibilityLabel("All categories")
         .accessibilityHint("Lists every category")
@@ -556,6 +618,7 @@ struct TagFormView: View {
         case .planning:      planningBody(rows)
         case .basalTemp:     basalBody(rows)
         case .menopause:     menopauseBody(rows)
+        case .skin:          SkinLogBody(selection: $selection, loggedToday: loggedSkinToday)
         case .chips:         chipsBody(rows)
         }
     }
@@ -861,8 +924,11 @@ struct TagFormView: View {
             FlowLayout(spacing: DS.Spacing.sm) {
                 ForEach(rows) { row in chip(row.pick) }
             }
-            Text("Not here? Type it in the search to add your own.")
+            Text(category == .intimacy
+                 ? "Logged as a day tag. Counted together with Intercourse in Planning."
+                 : "Not here? Type it in the search to add your own.")
                 .font(.footnote).foregroundColor(DS.Color.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(DS.Spacing.md)
         .background(CardSurface())
@@ -910,7 +976,7 @@ struct TagFormView: View {
     }
 
     private func trayChip(_ item: TagSelection.Item) -> some View {
-        TrayChip(item: item) { animate { selection.remove(item.pick) } }
+        TrayChip(item: TagFormLogic.displayItem(item)) { animate { selection.remove(item.pick) } }
             .transition(.scale.combined(with: .opacity))
     }
 
@@ -921,7 +987,8 @@ struct TagFormView: View {
         var picks = selection
         if let custom = pendingCustom { picks.add(custom) }
         guard dayCanHoldTags, !picks.isEmpty else { return }
-        let blocked = TagFormLogic.blockedDuplicates(picks.items,
+        // A Skin entry replaces the day's entry for its area, so it is never a duplicate.
+        let blocked = TagFormLogic.blockedDuplicates(picks.items.filter { !SkinTag.isSkinRaw($0.pick.raw) },
                                                      isDuplicate: { myEvents.isDuplicateTag($0, on: tagDate) },
                                                      storedLevel: storedLevel)
         if !blocked.isEmpty {
@@ -930,7 +997,11 @@ struct TagFormView: View {
             return
         }
         for tag in picks.tagsToLog {
-            myEvents.logTag(tag.raw, on: tagDate, mode: mode, intensity: tag.intensity)
+            if SkinTag.isSkinRaw(tag.raw), let skin = SkinTag.parse(tag.raw) {
+                myEvents.logSkinTag(skin, on: tagDate, mode: mode)
+            } else {
+                myEvents.logTag(tag.raw, on: tagDate, mode: mode, intensity: tag.intensity)
+            }
         }
         dismiss()
     }

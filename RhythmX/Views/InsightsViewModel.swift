@@ -217,7 +217,9 @@ struct InsightsViewModel {
         "Basal Temp": DS.Color.moon,
         "Other": DS.Color.secondaryText.opacity(0.4),
         "Planning": DS.Color.phase3Default.opacity(0.7),
-        "Menopause": DS.Color.phase1Default.opacity(0.7)
+        "Menopause": DS.Color.phase1Default.opacity(0.7),
+        "Skin": DS.Color.accent,
+        "Intimacy": DS.Color.waveFront
     ]
 
     /// The menstrual categories the legend always lists.

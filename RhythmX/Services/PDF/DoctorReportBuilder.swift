@@ -2,7 +2,10 @@
 //
 //  The numbers behind the Doctor Report. Cycle and Planning read cycle data only (legacy, Cycle and Planning
 //  events and blocks; menopause entries never reach a cycle statistic). Menopause mode adds the variant built
-//  from `MenopauseInsights`. The builder has no UI and stores nothing.
+//  from `MenopauseInsights`. Skin and sexual activity are optional sections the person switches on or off in the
+//  report options; they read the same events as the rest of the report (cycle data, or everything in Menopause
+//  mode) and take a day's phase from `SkinStats`, so menopause entries never supply one. The builder has no UI
+//  and stores nothing.
 
 import Foundation
 
@@ -28,7 +31,72 @@ struct MenopauseReport: Equatable {
     }
 }
 
+/// The Skin section: per area, logged and flare days, the most logged types and colours, and the phase table
+/// from `SkinStats`. A percentage needs `SkinStats.minimumCycles` cycles with skin logs and
+/// `SkinStats.minimumDaysPerPhase` logged days in the phase; otherwise only counts are given.
+struct SkinReport: Equatable {
+    struct PhaseCount: Equatable {
+        let phase: Event.EventType
+        /// Days with a skin log in this phase (any area).
+        let loggedDays: Int
+        /// Of those, days this area flared.
+        let flareDays: Int
+        let percent: Int?
+    }
+
+    struct AreaSummary: Equatable, Identifiable {
+        let area: SkinTag.Area
+        /// Days with any skin log for this area, Clear included.
+        let loggedDays: Int
+        /// Days this area had a type other than Clear.
+        let flareDays: Int
+        /// Up to two, most flare days first.
+        let topKinds: [SkinTag.Kind]
+        let topColours: [SkinTag.Colour]
+        /// One per phase, in `Event.EventType.allCases` order.
+        let phases: [PhaseCount]
+        var id: String { area.rawValue }
+    }
+
+    static let topLimit = 2
+
+    /// Days with a skin log (legacy Other:Acne included).
+    let loggedDays: Int
+    let cyclesCovered: Int
+    let hasPhaseData: Bool
+    let areas: [AreaSummary]
+
+    var hasData: Bool { loggedDays > 0 }
+}
+
+/// The Sexual activity section: days with `Intimacy:Sex` or `Planning:Intercourse`, each day counted once.
+struct SexualActivityReport: Equatable {
+    struct CycleCount: Equatable {
+        let start: Date
+        let days: Int
+        /// The running cycle, which has no end yet.
+        let isCurrent: Bool
+    }
+
+    struct PhaseDays: Equatable {
+        let phase: Event.EventType
+        let days: Int
+    }
+
+    let totalDays: Int
+    /// The last `DoctorReport.chartCycles` cycles, oldest first. Empty in Menopause mode.
+    let perCycle: [CycleCount]
+    /// One per phase, in `Event.EventType.allCases` order.
+    let perPhase: [PhaseDays]
+
+    var hasData: Bool { totalDays > 0 }
+}
+
 struct DoctorReport: Equatable {
+    /// Report options, remembered on the export screen. Both default to on.
+    static let includeSkinKey = "doctorReportIncludeSkin"
+    static let includeSexualActivityKey = "doctorReportIncludeSexualActivity"
+
     /// A cycle longer than this is marked long.
     static let longCycleDays = 45
     /// Bars on the chart.
@@ -59,11 +127,15 @@ struct DoctorReport: Equatable {
     let longCycleIndexes: Set<Int>
     /// The Menopause variant; only built in Menopause mode.
     let menopause: MenopauseReport?
+    /// nil when the person switched the section off.
+    var skin: SkinReport? = nil
+    var sexualActivity: SexualActivityReport? = nil
 }
 
 enum DoctorReportBuilder {
     static func make(events: [Event], archivedBlocks: [ArchivedDataBlock], mode: TrackingMode,
-                     today: Date, calendar: Calendar = .current) -> DoctorReport {
+                     today: Date, calendar: Calendar = .current,
+                     includeSkin: Bool = true, includeSexualActivity: Bool = true) -> DoctorReport {
         let cycleEvents = events.filter { $0.effectiveMode != .menopause }
         let settings = AppSettings()
 
@@ -117,6 +189,20 @@ enum DoctorReportBuilder {
 
         let symptoms = topSymptoms(in: blockEvents.flatMap { $0 } + cycleEvents)
 
+        // Skin and sexual activity read what the rest of the report reads: cycle data, or everything in
+        // Menopause mode. `SkinStats` takes the phase of a day from cycle data only.
+        let optional: (stats: SkinStats, days: [Date: Set<String>])? = {
+            guard includeSkin || includeSexualActivity else { return nil }
+            let sourceEvents = mode == .menopause ? events : cycleEvents
+            let sourceBlocks = mode == .menopause ? archivedBlocks : cycleBlocks
+            let stats = SkinStats(events: sourceEvents, archivedBlocks: sourceBlocks, today: today, window: .all, calendar: calendar)
+            let days = rawTagsByDay(sourceEvents + sourceBlocks.flatMap { $0.groupedEvents.flatMap(\.events) },
+                                    today: today, calendar: calendar)
+            return (stats, days)
+        }()
+        let skinSource = includeSkin ? optional : nil
+        let sexSource = includeSexualActivity ? optional : nil
+
         return DoctorReport(
             cycleLengths: charted.map(\.length),
             cycleStarts: charted.map(\.start),
@@ -127,8 +213,91 @@ enum DoctorReportBuilder {
             topSymptoms: symptoms,
             hasEnoughData: completed.count >= DoctorReport.minimumCycles,
             longCycleIndexes: Set(charted.enumerated().filter { $0.element.length > DoctorReport.longCycleDays }.map(\.offset)),
-            menopause: mode == .menopause ? makeMenopause(events: events, today: today, calendar: calendar) : nil
+            menopause: mode == .menopause ? makeMenopause(events: events, today: today, calendar: calendar) : nil,
+            skin: skinSource.map { makeSkin(stats: $0.stats, days: $0.days) },
+            sexualActivity: sexSource.map {
+                makeSexualActivity(stats: $0.stats, days: $0.days, periodStarts: mode == .menopause ? [] : periodStarts)
+            }
         )
+    }
+
+    /// Start of day to every tag logged that day, up to and including today.
+    static func rawTagsByDay(_ events: [Event], today: Date, calendar: Calendar) -> [Date: Set<String>] {
+        let end = calendar.startOfDay(for: today)
+        var result: [Date: Set<String>] = [:]
+        for event in events {
+            let key = calendar.startOfDay(for: event.date)
+            guard key <= end else { continue }
+            let raws = TagParser.split(event.tags)
+            if !raws.isEmpty { result[key, default: []].formUnion(raws) }
+        }
+        return result
+    }
+
+    /// Areas in `SkinStats.rows()` order (flared areas), then areas logged only as Clear, in area order.
+    static func makeSkin(stats: SkinStats, days: [Date: Set<String>]) -> SkinReport {
+        let skinByDay = days.compactMapValues { raws -> [SkinTag]? in
+            let tags = raws.sorted().compactMap(SkinTag.parseAny)
+            return tags.isEmpty ? nil : tags
+        }
+        let rows = stats.rows()
+        let flared = rows.map(\.area)
+        let clearOnly = SkinTag.Area.allCases.filter { area in
+            !flared.contains(area) && skinByDay.values.contains { $0.contains { $0.area == area } }
+        }
+
+        let areas = (flared + clearOnly).map { area -> SkinReport.AreaSummary in
+            let row = rows.first { $0.area == area }
+            var logged = 0, flares = 0
+            var kindDays: [SkinTag.Kind: Int] = [:], colourDays: [SkinTag.Colour: Int] = [:]
+            for tags in skinByDay.values {
+                let here = tags.filter { $0.area == area }
+                guard !here.isEmpty else { continue }
+                logged += 1
+                let flaring = here.filter(\.isFlare)
+                guard !flaring.isEmpty else { continue }
+                flares += 1
+                for kind in Set(flaring.flatMap(\.kinds)) where kind != .clear { kindDays[kind, default: 0] += 1 }
+                for colour in Set(flaring.compactMap(\.colour)) { colourDays[colour, default: 0] += 1 }
+            }
+            let phases = Event.EventType.allCases.map { phase -> SkinReport.PhaseCount in
+                let loggedInPhase = stats.loggedDaysByPhase[phase] ?? 0
+                let flareInPhase = row?.cells.first { $0.phase == phase }?.flareDays ?? 0
+                let percent = stats.hasPhaseData
+                    ? SkinStats.percent(flareInPhase, of: loggedInPhase, minimum: SkinStats.minimumDaysPerPhase) : nil
+                return SkinReport.PhaseCount(phase: phase, loggedDays: loggedInPhase, flareDays: flareInPhase, percent: percent)
+            }
+            return SkinReport.AreaSummary(area: area, loggedDays: logged, flareDays: flares,
+                                          topKinds: top(kindDays, order: SkinTag.Kind.allCases),
+                                          topColours: top(colourDays, order: SkinTag.Colour.allCases),
+                                          phases: phases)
+        }
+        return SkinReport(loggedDays: stats.loggedDays, cyclesCovered: stats.cyclesCovered,
+                          hasPhaseData: stats.hasPhaseData, areas: areas)
+    }
+
+    /// Most frequent first; ties keep `order`.
+    private static func top<T: Hashable>(_ counts: [T: Int], order: [T]) -> [T] {
+        let rank = Dictionary(uniqueKeysWithValues: order.enumerated().map { ($1, $0) })
+        return counts.filter { $0.value > 0 }
+            .sorted { $0.value != $1.value ? $0.value > $1.value : rank[$0.key, default: 0] < rank[$1.key, default: 0] }
+            .prefix(SkinReport.topLimit)
+            .map(\.key)
+    }
+
+    /// A day with `Intimacy:Sex`, `Planning:Intercourse` or both counts once. A cycle runs from one period start
+    /// to the next; days before the first start belong to no cycle.
+    static func makeSexualActivity(stats: SkinStats, days: [Date: Set<String>], periodStarts: [Date]) -> SexualActivityReport {
+        let sexDays = days.filter { !$0.value.isDisjoint(with: SkinStats.intimacyRaws) }.map(\.key)
+        let perPhase = stats.intimacyByPhase().map { SexualActivityReport.PhaseDays(phase: $0.phase, days: $0.flareDays) }
+        let perCycle = periodStarts.enumerated().map { index, start -> SexualActivityReport.CycleCount in
+            let next = index + 1 < periodStarts.count ? periodStarts[index + 1] : nil
+            let count = sexDays.filter { day in day >= start && next.map { day < $0 } ?? true }.count
+            return SexualActivityReport.CycleCount(start: start, days: count, isCurrent: next == nil)
+        }
+        return SexualActivityReport(totalDays: sexDays.count,
+                                    perCycle: Array(perCycle.suffix(DoctorReport.chartCycles)),
+                                    perPhase: perPhase)
     }
 
     /// Symptom-category tags only, each occurrence counted, most frequent first, then by label.

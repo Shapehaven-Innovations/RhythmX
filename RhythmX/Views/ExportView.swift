@@ -116,6 +116,8 @@ struct ExportView: View {
     @State private var lightTints = false
     @State private var name = ""
     @State private var includeBirthDate = false
+    @AppStorage(DoctorReport.includeSkinKey) private var includeSkin = true
+    @AppStorage(DoctorReport.includeSexualActivityKey) private var includeSexualActivity = true
     @State private var birthDate = Calendar.current.date(byAdding: .year, value: -30, to: Date()) ?? Date()
     @State private var showPaywall = false
     @State private var now = Date()
@@ -308,6 +310,12 @@ struct ExportView: View {
                     .font(DS.Font.label)
                     .foregroundColor(DS.Color.primaryText)
             }
+            Toggle("Include skin", isOn: $includeSkin)
+                .font(DS.Font.label)
+                .foregroundColor(DS.Color.primaryText)
+            Toggle("Include sexual activity", isOn: $includeSexualActivity)
+                .font(DS.Font.label)
+                .foregroundColor(DS.Color.primaryText)
             Text(ExportCopy.privacyNote)
                 .font(DS.Font.micro)
                 .foregroundColor(DS.Color.secondaryText)
@@ -409,6 +417,8 @@ struct ExportView: View {
         let calendarOrientation: PaperSize.Orientation
         let reportOrientation: PaperSize.Orientation
         let lightTints: Bool
+        let includeSkin: Bool
+        let includeSexualActivity: Bool
         let mode: TrackingMode
         let eventCount: Int
         let blockCount: Int
@@ -426,7 +436,8 @@ struct ExportView: View {
         RenderKey(kind: kind, month: month.monthStart, paper: paper,
                   calendarOrientation: appSettings.pdfOrientation(for: .calendar),
                   reportOrientation: appSettings.pdfOrientation(for: .report),
-                  lightTints: lightTints, mode: appSettings.trackingMode, eventCount: eventStore.events.count,
+                  lightTints: lightTints, includeSkin: includeSkin, includeSexualActivity: includeSexualActivity,
+                  mode: appSettings.trackingMode, eventCount: eventStore.events.count,
                   blockCount: archivedDataStore.archivedBlocks.count, day: now.startOfDay)
     }
 
@@ -457,7 +468,8 @@ struct ExportView: View {
         let mode = appSettings.trackingMode
         let events = mode == .menopause ? eventStore.events : eventStore.cycleEvents
         let blocks = mode == .menopause ? archivedDataStore.archivedBlocks : archivedDataStore.cycleBlocks
-        let report = DoctorReportBuilder.make(events: events, archivedBlocks: blocks, mode: mode, today: now)
+        let report = DoctorReportBuilder.make(events: events, archivedBlocks: blocks, mode: mode, today: now,
+                                              includeSkin: includeSkin, includeSexualActivity: includeSexualActivity)
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         return DoctorReportPDFRenderer(today: now)
             .render(report, paper: paper, orientation: appSettings.pdfOrientation(for: .report),

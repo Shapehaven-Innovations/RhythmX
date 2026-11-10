@@ -137,7 +137,7 @@ struct InsightFacts: Codable, Equatable {
     /// Library tags only, never Medication: typed custom text and medicines stay out of every writer's input.
     static func isSurfaceable(raw: String) -> Bool {
         let pick = TagFormLogic.pick(fromRaw: raw)
-        guard pick.category != .medication else { return false }
+        guard pick.category != .medication, pick.category != .intimacy else { return false }
         return (TagLibrary.tags[pick.category] ?? []).contains(pick.value)
     }
 

@@ -51,6 +51,20 @@ enum CalendarPhaseLookup {
         events.first { calendar.isDate($0.date, inSameDayAs: date) }?.eventType
     }
 
+    /// Phase per start-of-day, live events first, then archived cycle blocks. Menopause carriers never supply a
+    /// phase. The first event seen for a day wins, as in `phase(on:events:)`.
+    static func phaseByDay(events: [Event], archivedBlocks: [ArchivedDataBlock],
+                           calendar: Calendar = .current) -> [Date: Event.EventType] {
+        var map: [Date: Event.EventType] = [:]
+        let archived = archivedBlocks.filter { $0.effectiveMode != .menopause }
+            .flatMap { $0.groupedEvents.flatMap(\.events) }
+        for event in events + archived where event.effectiveMode != .menopause {
+            let key = calendar.startOfDay(for: event.date)
+            if map[key] == nil { map[key] = event.eventType }
+        }
+        return map
+    }
+
     static func isPredictedPeriod(_ date: Date, start: Date?, length: Int = 5, calendar: Calendar = .current) -> Bool {
         guard let start else { return false }
         let d = calendar.dateComponents([.day], from: calendar.startOfDay(for: start), to: calendar.startOfDay(for: date)).day ?? -1

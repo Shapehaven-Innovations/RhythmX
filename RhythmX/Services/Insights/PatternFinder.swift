@@ -220,7 +220,7 @@ enum PatternFinder {
         var result: [Occurrence] = []
         for (index, cycle) in cycles.enumerated() {
             for entry in cycle {
-                for raw in TagParser.split(entry.event.tags) {
+                for raw in TagParser.split(entry.event.tags) where !SkinTag.isSkinRaw(raw) {
                     result.append(Occurrence(tag: raw, cycleIndex: index, day: entry.day, phase: entry.event.eventType))
                 }
             }
@@ -250,7 +250,7 @@ enum PatternFinder {
             guard let daysAgo = calendar.dateComponents([.day], from: day, to: today).day, daysAgo >= 0 else { continue }
             let week = daysAgo / 7
             guard week < weeks else { continue }
-            for raw in TagParser.split(event.tags) {
+            for raw in TagParser.split(event.tags) where !SkinTag.isSkinRaw(raw) {
                 result.append(WeekOccurrence(tag: raw, weekIndex: weeks - 1 - week))
             }
         }

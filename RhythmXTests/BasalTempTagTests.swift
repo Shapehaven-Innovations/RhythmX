@@ -14,7 +14,10 @@ final class BasalTempTagTests: XCTestCase {
 
     func testEveryCategoryHasLibraryTagsAndAColor() {
         for cat in TagCategory.allCases {
-            XCTAssertFalse((TagLibrary.tags[cat] ?? []).isEmpty, "\(cat.rawValue) has no library tags")
+            // Skin tags are composite and built in the skin log, so its library list is intentionally empty.
+            if cat != .skin {
+                XCTAssertFalse((TagLibrary.tags[cat] ?? []).isEmpty, "\(cat.rawValue) has no library tags")
+            }
             XCTAssertNotNil(InsightsViewModel.categoryColors[cat.rawValue], "\(cat.rawValue) has no insights color")
         }
     }

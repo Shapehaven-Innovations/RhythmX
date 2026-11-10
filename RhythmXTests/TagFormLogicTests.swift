@@ -14,6 +14,20 @@ final class TagFormLogicTests: XCTestCase {
         return ArchivedDataBlock(date: day(-120), groupedEvents: [.init(eventType: phase, events: events)], mode: mode)
     }
 
+    // MARK: - Default category
+
+    func testDefaultCategoryIsSymptomExceptMenopause() {
+        XCTAssertEqual(TagFormLogic.defaultCategory(for: .cycle), .symptom)
+        XCTAssertEqual(TagFormLogic.defaultCategory(for: .planning), .symptom)
+        XCTAssertEqual(TagFormLogic.defaultCategory(for: .menopause), .menopause)
+    }
+
+    func testDefaultCategoryIsInTheModeStrip() {
+        for mode in TrackingMode.allCases {
+            XCTAssertTrue(TagLibrary.categories(for: mode).contains(TagFormLogic.defaultCategory(for: mode)), "\(mode)")
+        }
+    }
+
     // MARK: - Tag strings
 
     func testTagStringKeepsTheStoredFormat() {
@@ -215,5 +229,44 @@ final class TagFormLogicTests: XCTestCase {
         XCTAssertEqual(TagFormLogic.topCategory(phase: .luteal, blocks: blocks), .mood)
         XCTAssertNil(TagFormLogic.topCategory(phase: .menstrual, blocks: blocks))
         XCTAssertNil(TagFormLogic.topCategory(phase: nil, blocks: blocks))
+    }
+
+    // MARK: - Skin labels, layout and Menopause suggestions
+
+    func testDisplayLabelUsesSkinDisplayLabel() {
+        let skin = TagFormLogic.pick(fromRaw: "Skin:Nose/Acne+Irritated")
+        XCTAssertEqual(skin.category, .skin)
+        XCTAssertEqual(TagFormLogic.displayLabel(skin), "Nose \u{00B7} Acne, Irritated")
+        XCTAssertEqual(TagFormLogic.displayLabel(TagFormLogic.pick(fromRaw: "Skin:Chin/Breakout/Pink")),
+                       "Chin \u{00B7} Breakout \u{00B7} Pink")
+        XCTAssertEqual(TagFormLogic.displayLabel(TagPick(category: .symptom, value: "Cramps")), "Cramps")
+        // A Skin value that does not parse is shown as stored.
+        XCTAssertEqual(TagFormLogic.displayLabel(TagPick(category: .skin, value: "Acne")), "Acne")
+    }
+
+    func testDisplayItemKeepsCountAndLevelAndOnlyChangesSkin() {
+        let skin = TagSelection.Item(pick: TagFormLogic.pick(fromRaw: "Skin:Jaw/Dry+Flaky/Dark spots"), count: 1)
+        let shown = TagFormLogic.displayItem(skin)
+        XCTAssertEqual(shown.pick.value, "Jaw \u{00B7} Dry, Flaky \u{00B7} Dark spots")
+        XCTAssertEqual(shown.count, 1)
+        XCTAssertEqual(TagFormLogic.trayAccessibilityLabel(skin), "Jaw \u{00B7} Dry, Flaky \u{00B7} Dark spots")
+        let cramps = TagSelection.Item(pick: TagPick(category: .symptom, value: "Cramps"), count: 1, intensity: .medium)
+        XCTAssertEqual(TagFormLogic.displayItem(cramps), cramps)
+    }
+
+    func testSuggestionsFollowTheBodyOnlyForSkin() {
+        XCTAssertTrue(TagFormLogic.suggestionsFollowBody(category: .skin))
+        for category in TagCategory.allCases where category != .skin {
+            XCTAssertFalse(TagFormLogic.suggestionsFollowBody(category: category), "\(category)")
+        }
+    }
+
+    func testMenopauseSuggestionsIgnoreACyclePhase() throws {
+        let row = try XCTUnwrap(TagFormLogic.suggestedRow(phase: .ovulation, mode: .menopause, history: []))
+        XCTAssertEqual(row.title, "Common in menopause")
+        XCTAssertFalse(row.title.contains("phase"))
+        XCTAssertTrue(row.picks.allSatisfy { $0.category == .menopause })
+        XCTAssertEqual(TagFormLogic.suggestedRow(phase: .ovulation, mode: .cycle, history: [])?.title,
+                       "For your ovulation phase")
     }
 }

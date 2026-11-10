@@ -210,9 +210,22 @@ class EventStore: ObservableObject {
     func isDuplicateTag(_ raw: String, on date: Date) -> Bool {
         guard !TagLibrary.isRepeatable(raw: raw) else { return false }
         let target = date.startOfDay
+        let equivalents = TagLibrary.equivalent(raw)
         return events.contains { event in
-            event.date.startOfDay == target && TagParser.split(event.tags).contains(raw)
+            event.date.startOfDay == target && !equivalents.isDisjoint(with: TagParser.split(event.tags))
         }
+    }
+
+    /// Logs a skin tag for that day. Any earlier `Skin:` tag for the same area on that day is cleared first,
+    /// so an area holds one entry per day. Other areas and the legacy `Other:Acne` tag are never touched.
+    @discardableResult
+    func logSkinTag(_ tag: SkinTag, on date: Date, mode: TrackingMode) -> Bool {
+        let day = date.startOfDay
+        let stale = events.filter { $0.date.startOfDay == day }
+            .flatMap { TagParser.split($0.tags) }
+            .filter { SkinTag.parse($0)?.area == tag.area }
+        for raw in Set(stale) { clearTag(raw, on: date) }
+        return logTag(tag.raw, on: date, mode: mode)
     }
 
     /// Appends `raw` to the one event `eventForLogging` picks, creating a Menopause carrier when needed,

@@ -4,7 +4,9 @@
 //  logged symptoms and the period start dates. Name and date of birth are arguments only; they are drawn
 //  on the page and nowhere else. The page ends with "Tracking tool, not medical advice." Portrait is one
 //  column; landscape is still one page, in two columns (statistics and symptoms on the left, the cycle chart
-//  and period start dates on the right).
+//  and period start dates on the right). When the person keeps Skin or Sexual activity switched on and has logged
+//  either, a second page carries those sections as plain text tables (no colour encoding, so it prints in
+//  greyscale), with the same header and disclaimer.
 
 import UIKit
 
@@ -27,7 +29,8 @@ struct DoctorReportPDFRenderer {
     func render(_ report: DoctorReport, paper: PaperSize, orientation: PaperSize.Orientation = .portrait,
                 name: String?, birthDate: Date?) -> Data {
         if let menopause = report.menopause {
-            return renderMenopause(menopause, paper: paper, orientation: orientation, name: name, birthDate: birthDate)
+            return renderMenopause(menopause, paper: paper, orientation: orientation, name: name, birthDate: birthDate,
+                                   sections: report)
         }
         let page = CGRect(origin: .zero, size: paper.size(orientation))
         let renderer = UIGraphicsPDFRenderer(bounds: page, format: PDFDrawing.format(title: "Cycle Report"))
@@ -41,6 +44,7 @@ struct DoctorReportPDFRenderer {
             if orientation == .landscape {
                 landscapeColumns(cg, report: report, page: page, top: y)
                 footer(cg, page: page)
+                sectionsPage(context, report: report, page: page, title: "Cycle Report", name: name, birthDate: birthDate)
                 return
             }
 
@@ -76,13 +80,15 @@ struct DoctorReportPDFRenderer {
             }
 
             footer(cg, page: page)
+            sectionsPage(context, report: report, page: page, title: "Cycle Report", name: name, birthDate: birthDate)
         }
     }
 
     // MARK: - Menopause variant
 
+    /// - Parameter sections: the report whose Skin and Sexual activity sections go on a second page, if any.
     func renderMenopause(_ report: MenopauseReport, paper: PaperSize, orientation: PaperSize.Orientation = .portrait,
-                         name: String?, birthDate: Date?) -> Data {
+                         name: String?, birthDate: Date?, sections: DoctorReport? = nil) -> Data {
         let page = CGRect(origin: .zero, size: paper.size(orientation))
         let renderer = UIGraphicsPDFRenderer(bounds: page, format: PDFDrawing.format(title: "Menopause Report"))
         return renderer.pdfData { context in
@@ -92,6 +98,11 @@ struct DoctorReportPDFRenderer {
             let margin = PDFDrawing.margin
             let width = page.width - 2 * margin
 
+            defer {
+                if let sections {
+                    sectionsPage(context, report: sections, page: page, title: "Menopause Report", name: name, birthDate: birthDate)
+                }
+            }
             guard report.hasData else {
                 y = sectionTitle("Menopause tracking", y: y)
                 _ = note(Self.menopauseSparseMessage, y: y, width: width)
@@ -118,6 +129,145 @@ struct DoctorReportPDFRenderer {
 
             footer(cg, page: page)
         }
+    }
+
+    // MARK: - Skin and sexual activity
+
+    static let skinTitle = "Skin"
+    static let sexualActivityTitle = "Sexual activity"
+
+    /// A second page, only when an included section has something logged.
+    static func hasSectionsPage(_ report: DoctorReport) -> Bool {
+        (report.skin?.hasData ?? false) || (report.sexualActivity?.hasData ?? false)
+    }
+
+    private func sectionsPage(_ context: UIGraphicsPDFRendererContext, report: DoctorReport, page: CGRect,
+                              title: String, name: String?, birthDate: Date?) {
+        guard Self.hasSectionsPage(report) else { return }
+        context.beginPage()
+        let cg = context.cgContext
+        let margin = PDFDrawing.margin
+        let width = page.width - 2 * margin
+        var y = header(cg, page: page, title: title, name: name, birthDate: birthDate)
+        if let skin = report.skin { y = skinSection(cg, skin, y: y, width: width) }
+        if let sex = report.sexualActivity { y = sexualActivitySection(cg, sex, y: y, width: width) }
+        footer(cg, page: page)
+    }
+
+    private func dayCount(_ n: Int) -> String { n == 1 ? "1 day" : "\(n) days" }
+
+    private func list<T: RawRepresentable>(_ items: [T]) -> String where T.RawValue == String {
+        guard let first = items.first else { return "-" }
+        return ([first.rawValue] + items.dropFirst().map { $0.rawValue.lowercased() }).joined(separator: ", ")
+    }
+
+    private func phaseName(_ phase: Event.EventType) -> String { phase.rawValue.capitalized }
+
+    private func skinSection(_ cg: CGContext, _ skin: SkinReport, y: CGFloat, width: CGFloat) -> CGFloat {
+        let margin = PDFDrawing.margin
+        var y = sectionTitle(Self.skinTitle, y: y)
+        guard skin.hasData else { return note("No skin logged yet.", y: y, width: width) }
+
+        let cycles = skin.cyclesCovered == 1 ? "1 cycle" : "\(skin.cyclesCovered) cycles"
+        var summary = "\(dayCount(skin.loggedDays)) with a skin log, across \(cycles). Logged and Flared count days per area; "
+            + "a flare day has any type other than Clear. A phase column shows flare days / days with a skin log in that phase."
+        summary += skin.hasPhaseData
+            ? " A percentage is shown once a phase has \(SkinStats.minimumDaysPerPhase) or more logged days."
+            : " Percentages need skin logs in \(SkinStats.minimumCycles) cycles "
+                + "(\(min(skin.cyclesCovered, SkinStats.minimumCycles)) of \(SkinStats.minimumCycles) so far), so counts are shown instead."
+        y += PDFDrawing.paragraph(summary, in: CGRect(x: margin, y: y, width: width, height: 60),
+                                  font: PDFDrawing.font(9.5), color: PDFDrawing.muted) + 10
+
+        // Columns: area, days logged, flare days, types, colours, then one per phase. Counts and phases have fixed
+        // widths; types and colours share what is left.
+        let phases = Event.EventType.allCases
+        let phaseWidth = max(60, width * 0.115)
+        let fixedWidth: CGFloat = 52 + 42 + 34 + phaseWidth * CGFloat(phases.count)
+        let rest = max(0, width - fixedWidth)
+        let columns: [(String, CGFloat)] = [("Area", 52), ("Logged", 42), ("Flared", 34),
+                                            ("Mostly", rest * 0.47), ("Colour", rest * 0.53)]
+            + phases.map { (phaseName($0), phaseWidth) }
+        let rowHeight: CGFloat = 15
+        let headerFont = PDFDrawing.font(8.5, weight: .semibold)
+        let cellFont = PDFDrawing.font(8.5)
+
+        func drawRow(_ cells: [String], font: UIFont, color: UIColor = PDFDrawing.ink) {
+            var x = margin
+            for (index, cell) in cells.enumerated() {
+                let columnWidth = columns[index].1
+                PDFDrawing.text(cell, in: CGRect(x: x + 3, y: y + 2, width: columnWidth - 6, height: rowHeight - 2),
+                                font: font, color: color)
+                x += columnWidth
+            }
+            y += rowHeight
+        }
+
+        drawRow(columns.map(\.0), font: headerFont, color: PDFDrawing.muted)
+        PDFDrawing.rule(cg, from: CGPoint(x: margin, y: y), to: CGPoint(x: margin + width, y: y))
+        for (index, area) in skin.areas.enumerated() {
+            if index % 2 == 1 {
+                cg.setFillColor(PDFDrawing.faint.cgColor)
+                cg.fill(CGRect(x: margin, y: y, width: width, height: rowHeight))
+            }
+            let phaseCells = area.phases.map { cell -> String in
+                guard cell.loggedDays > 0 else { return "-" }
+                let counts = "\(cell.flareDays)/\(cell.loggedDays)"
+                return cell.percent.map { "\($0)% (\(counts))" } ?? counts
+            }
+            drawRow([area.area.rawValue, "\(area.loggedDays)", "\(area.flareDays)", list(area.topKinds), list(area.topColours)]
+                    + phaseCells, font: cellFont)
+        }
+        return y + 18
+    }
+
+    private func sexualActivitySection(_ cg: CGContext, _ sex: SexualActivityReport, y: CGFloat, width: CGFloat) -> CGFloat {
+        let margin = PDFDrawing.margin
+        var y = sectionTitle(Self.sexualActivityTitle, y: y)
+        guard sex.hasData else { return note("No sexual activity logged yet.", y: y, width: width) }
+
+        let summary = "\(dayCount(sex.totalDays)) with sex logged. Sex and intercourse logged on the same day count as one day."
+        y += PDFDrawing.paragraph(summary, in: CGRect(x: margin, y: y, width: width, height: 40),
+                                  font: PDFDrawing.font(9.5), color: PDFDrawing.muted) + 8
+
+        let rowHeight: CGFloat = 15
+        let gutter: CGFloat = 28
+        let tableWidth = min(220, (width - gutter) / 2)
+        func table(x: CGFloat, heading: String, rows: [(String, String)]) -> CGFloat {
+            var rowY = y
+            PDFDrawing.text(heading, in: CGRect(x: x + 3, y: rowY + 2, width: tableWidth * 0.7, height: rowHeight - 2),
+                            font: PDFDrawing.font(8.5, weight: .semibold), color: PDFDrawing.muted)
+            PDFDrawing.text("Days", in: CGRect(x: x + tableWidth * 0.7, y: rowY + 2, width: tableWidth * 0.3 - 3, height: rowHeight - 2),
+                            font: PDFDrawing.font(8.5, weight: .semibold), color: PDFDrawing.muted, alignment: .right)
+            rowY += rowHeight
+            PDFDrawing.rule(cg, from: CGPoint(x: x, y: rowY), to: CGPoint(x: x + tableWidth, y: rowY))
+            for (index, row) in rows.enumerated() {
+                if index % 2 == 1 {
+                    cg.setFillColor(PDFDrawing.faint.cgColor)
+                    cg.fill(CGRect(x: x, y: rowY, width: tableWidth, height: rowHeight))
+                }
+                PDFDrawing.text(row.0, in: CGRect(x: x + 3, y: rowY + 2, width: tableWidth * 0.7, height: rowHeight - 2),
+                                font: PDFDrawing.font(9))
+                PDFDrawing.text(row.1, in: CGRect(x: x + tableWidth * 0.7, y: rowY + 2, width: tableWidth * 0.3 - 3, height: rowHeight - 2),
+                                font: PDFDrawing.font(9, weight: .semibold), alignment: .right)
+                rowY += rowHeight
+            }
+            return rowY
+        }
+
+        var bottom = y
+        var x = margin
+        if !sex.perCycle.isEmpty {
+            let rows = sex.perCycle.map { cycle -> (String, String) in
+                let start = cycle.start.formatted(.dateTime.year().month(.abbreviated).day())
+                return (cycle.isCurrent ? "\(start) (current)" : start, "\(cycle.days)")
+            }
+            bottom = max(bottom, table(x: x, heading: "Cycle starting", rows: rows))
+            x += tableWidth + gutter
+        }
+        if sex.perPhase.contains(where: { $0.days > 0 }) {
+            bottom = max(bottom, table(x: x, heading: "Phase", rows: sex.perPhase.map { (phaseName($0.phase), "\($0.days)") }))
+        }
+        return bottom + 18
     }
 
     // MARK: - Landscape

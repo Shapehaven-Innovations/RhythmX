@@ -222,6 +222,185 @@ final class DoctorReportTests: XCTestCase {
         XCTAssertFalse(text.contains("Average cycle"), "the menopause variant has no cycle statistics")
     }
 
+    // MARK: - Skin and sexual activity
+
+    /// A cycle block whose generated events carry tags at the given day offsets.
+    private func tagged(start: Date, length: Int, _ tags: [Int: String], mode: TrackingMode? = nil) -> ArchivedDataBlock {
+        block(events: taggedEvents(start: start, length: length, tags), mode: mode)
+    }
+
+    private func taggedEvents(start: Date, length: Int, _ tags: [Int: String]) -> [Event] {
+        var events = CycleGenerator.events(startDate: start, cycleLength: length)
+        for (offset, value) in tags { events[offset].tags = value }
+        return events
+    }
+
+    /// Two archived cycles with skin logs on the chin (and a legacy acne day), sex logged in both and in the
+    /// running cycle. Menstrual has 6 skin-logged days (5 on the chin flared), follicular 3 (all Clear).
+    private func skinAndSexReport(mode: TrackingMode = .cycle, includeSkin: Bool = true,
+                                  includeSexualActivity: Bool = true) -> DoctorReport {
+        let blocks = [
+            tagged(start: date(2026, 8, 10), length: 28, [0: "Skin:Chin/Acne/Red", 1: "Skin:Chin/Acne/Red", 2: "Skin:Chin/Acne+Breakout/Red",
+                                                         5: "Skin:Chin/Clear", 6: "Skin:Chin/Clear", 7: "Skin:Chin/Clear",
+                                                         14: "Intimacy:Sex, Planning:Intercourse"]),
+            tagged(start: date(2026, 9, 7), length: 28, [0: "Skin:Chin/Acne", 1: "Skin:Chin/Acne/Pink", 2: "Other:Acne",
+                                                        20: "Planning:Intercourse"])
+        ]
+        let current = taggedEvents(start: date(2026, 10, 5), length: 28, [3: "Intimacy:Sex"])
+        return DoctorReportBuilder.make(events: current, archivedBlocks: blocks, mode: mode, today: today,
+                                        includeSkin: includeSkin, includeSexualActivity: includeSexualActivity)
+    }
+
+    private func pages(_ data: Data) throws -> [String] {
+        let doc = try XCTUnwrap(PDFDocument(data: data), "renderer output is a PDF")
+        return (0..<doc.pageCount).map { doc.page(at: $0)?.string ?? "" }
+    }
+
+    func testSkinAndSexualActivitySectionsFollowTheSwitches() {
+        let both = skinAndSexReport()
+        XCTAssertNotNil(both.skin, "both switches default to on")
+        XCTAssertNotNil(both.sexualActivity)
+        XCTAssertNil(skinAndSexReport(includeSkin: false).skin)
+        XCTAssertNotNil(skinAndSexReport(includeSkin: false).sexualActivity)
+        XCTAssertNil(skinAndSexReport(includeSexualActivity: false).sexualActivity)
+        XCTAssertNotNil(skinAndSexReport(includeSexualActivity: false).skin)
+        let none = skinAndSexReport(includeSkin: false, includeSexualActivity: false)
+        XCTAssertNil(none.skin)
+        XCTAssertNil(none.sexualActivity)
+        XCTAssertEqual(none.cycleLengths, both.cycleLengths, "existing sections are unchanged")
+        XCTAssertEqual(none.hasEnoughData, both.hasEnoughData)
+    }
+
+    func testSkinPhaseTableFromSkinStats() throws {
+        let skin = try XCTUnwrap(skinAndSexReport().skin)
+        XCTAssertEqual(skin.loggedDays, 9)
+        XCTAssertEqual(skin.cyclesCovered, 2)
+        XCTAssertTrue(skin.hasPhaseData)
+        XCTAssertEqual(skin.areas.map(\.area), [.chin, .face], "flared areas in SkinStats order, Face (unspecified) last")
+
+        let chin = skin.areas[0]
+        XCTAssertEqual(chin.loggedDays, 8, "Clear days count as logged for the area")
+        XCTAssertEqual(chin.flareDays, 5)
+        XCTAssertEqual(chin.topKinds, [.acne, .breakout])
+        XCTAssertEqual(chin.topColours, [.red, .pink])
+        let menstrual = try XCTUnwrap(chin.phases.first { $0.phase == .menstrual })
+        XCTAssertEqual(menstrual.loggedDays, 6)
+        XCTAssertEqual(menstrual.flareDays, 5)
+        XCTAssertEqual(menstrual.percent, 83)
+        let follicular = try XCTUnwrap(chin.phases.first { $0.phase == .follicular })
+        XCTAssertEqual(follicular.percent, 0)
+        XCTAssertNil(chin.phases.first { $0.phase == .ovulation }?.percent, "a phase with under 3 logged days has no percentage")
+        XCTAssertEqual(chin.phases.map(\.phase), Event.EventType.allCases)
+    }
+
+    func testLegacyOtherAcneCountsAsFaceAcne() throws {
+        let face = try XCTUnwrap(skinAndSexReport().skin?.areas.first { $0.area == .face })
+        XCTAssertEqual(face.loggedDays, 1)
+        XCTAssertEqual(face.flareDays, 1)
+        XCTAssertEqual(face.topKinds, [.acne])
+        XCTAssertEqual(face.topColours, [])
+    }
+
+    func testSkinBelowTwoCyclesPrintsCountsOnly() throws {
+        let blocks = [tagged(start: date(2026, 8, 10), length: 28, [0: "Skin:Chin/Acne", 1: "Skin:Chin/Acne", 2: "Skin:Chin/Acne",
+                                                                    3: "Skin:Chin/Acne"]),
+                      block(start: date(2026, 9, 7), length: 28)]
+        let r = DoctorReportBuilder.make(events: CycleGenerator.events(startDate: date(2026, 10, 5), cycleLength: 28),
+                                         archivedBlocks: blocks, mode: .cycle, today: today)
+        let skin = try XCTUnwrap(r.skin)
+        XCTAssertEqual(skin.cyclesCovered, 1)
+        XCTAssertFalse(skin.hasPhaseData)
+        let chin = try XCTUnwrap(skin.areas.first)
+        XCTAssertEqual(chin.phases.first?.loggedDays, 4)
+        XCTAssertEqual(chin.phases.first?.flareDays, 4)
+        XCTAssertTrue(chin.phases.allSatisfy { $0.percent == nil }, "below two cycles no percentage is given")
+
+        let all = try pages(DoctorReportPDFRenderer(today: today).render(r, paper: .a4, name: nil, birthDate: nil))
+        XCTAssertEqual(all.count, 2)
+        XCTAssertTrue(all[1].contains("Chin"), all[1])
+        XCTAssertTrue(all[1].contains("4/4"), all[1])
+        XCTAssertFalse(all[1].contains("%"), "counts only: \(all[1])")
+    }
+
+    func testSexAndIntercourseOnOneDayCountOncePerCycleAndPhase() throws {
+        let sex = try XCTUnwrap(skinAndSexReport().sexualActivity)
+        XCTAssertEqual(sex.totalDays, 3, "Intimacy:Sex and Planning:Intercourse on the same day is one day")
+        XCTAssertEqual(sex.perPhase.map(\.phase), Event.EventType.allCases)
+        XCTAssertEqual(sex.perPhase.map(\.days), [1, 0, 1, 1])
+        XCTAssertEqual(sex.perCycle, [
+            SexualActivityReport.CycleCount(start: date(2026, 8, 10), days: 1, isCurrent: false),
+            SexualActivityReport.CycleCount(start: date(2026, 9, 7), days: 1, isCurrent: false),
+            SexualActivityReport.CycleCount(start: date(2026, 10, 5), days: 1, isCurrent: true)
+        ])
+    }
+
+    func testMenopauseEntriesSupplyNoPhase() throws {
+        let entry = Event(eventType: .follicular, date: date(2026, 10, 13), note: "",
+                          tags: "Skin:Chin/Acne, Intimacy:Sex", mode: .menopause)
+        let cycle = DoctorReportBuilder.make(events: [entry, menstrual(date(2026, 10, 5))], archivedBlocks: [],
+                                             mode: .cycle, today: today)
+        XCTAssertEqual(cycle.skin?.loggedDays, 0, "Menopause mode entries stay out of the cycle report")
+        XCTAssertEqual(cycle.sexualActivity?.totalDays, 0)
+
+        let menopause = DoctorReportBuilder.make(events: [entry], archivedBlocks: [], mode: .menopause, today: today)
+        let skin = try XCTUnwrap(menopause.skin)
+        XCTAssertEqual(skin.loggedDays, 1)
+        XCTAssertTrue(skin.areas[0].phases.allSatisfy { $0.loggedDays == 0 }, "a menopause entry has no phase")
+        let sex = try XCTUnwrap(menopause.sexualActivity)
+        XCTAssertEqual(sex.totalDays, 1)
+        XCTAssertTrue(sex.perPhase.allSatisfy { $0.days == 0 })
+        XCTAssertEqual(sex.perCycle, [])
+    }
+
+    func testRendererDrawsTheSectionsOnASecondPage() throws {
+        let renderer = DoctorReportPDFRenderer(today: today)
+        let all = try pages(renderer.render(skinAndSexReport(), paper: .letter, name: "Jane Example", birthDate: nil))
+        XCTAssertEqual(all.count, 2)
+        XCTAssertTrue(all[0].contains("Average cycle"), "page one is unchanged")
+        XCTAssertFalse(all[0].contains("Sexual activity"))
+        let second = all[1]
+        for part in ["Skin", "Chin", "Face", "83% (5/6)", "Acne, breakout", "Red", "Sexual activity", "Menstrual",
+                     "Luteal", "Jane Example"] {
+            XCTAssertTrue(second.contains(part), "\(part): \(second)")
+        }
+        XCTAssertTrue(second.trimmingCharacters(in: .whitespacesAndNewlines).hasSuffix(DoctorReportPDFRenderer.disclaimer),
+                      "the disclaimer is the last line of page two: \(second)")
+        for word in SkinStats.bannedWords {
+            XCTAssertFalse(second.lowercased().contains(word), "no causal wording: \(word)")
+        }
+
+        let noSkin = try pages(renderer.render(skinAndSexReport(includeSkin: false), paper: .letter, name: nil, birthDate: nil))
+        XCTAssertEqual(noSkin.count, 2)
+        XCTAssertFalse(noSkin[1].contains("Chin"), "skin switched off leaves the section out")
+        XCTAssertTrue(noSkin[1].contains("Sexual activity"))
+
+        let noSex = try pages(renderer.render(skinAndSexReport(includeSexualActivity: false), paper: .letter, name: nil, birthDate: nil))
+        XCTAssertFalse(noSex[1].contains("Sexual activity"))
+        XCTAssertTrue(noSex[1].contains("Chin"))
+
+        let neither = try pages(renderer.render(skinAndSexReport(includeSkin: false, includeSexualActivity: false),
+                                                paper: .letter, name: nil, birthDate: nil))
+        XCTAssertEqual(neither.count, 1, "both off: the report is one page")
+        XCTAssertFalse(neither[0].contains("Chin"))
+        XCTAssertFalse(neither[0].contains("Sexual activity"))
+    }
+
+    func testMenopauseVariantCarriesTheSectionsToo() throws {
+        let entry = Event(eventType: .follicular, date: date(2026, 10, 13), note: "",
+                          tags: "Skin:Chin/Acne, Intimacy:Sex, Menopause:Hot Flashes", mode: .menopause)
+        let r = DoctorReportBuilder.make(events: [entry], archivedBlocks: [], mode: .menopause, today: today)
+        let all = try pages(DoctorReportPDFRenderer(today: today).render(r, paper: .a4, name: nil, birthDate: nil))
+        XCTAssertEqual(all.count, 2)
+        XCTAssertTrue(all[0].contains("Months since last period"))
+        XCTAssertTrue(all[1].contains("Chin"))
+        XCTAssertTrue(all[1].contains("Sexual activity"))
+        XCTAssertFalse(all[1].contains("%"))
+    }
+
+    func testSwitchKeysAreDistinct() {
+        XCTAssertNotEqual(DoctorReport.includeSkinKey, DoctorReport.includeSexualActivityKey)
+    }
+
     // MARK: - Page
 
     func testReportHeaderCarriesTheAppIconAsAnImage() throws {

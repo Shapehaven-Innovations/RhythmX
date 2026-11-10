@@ -304,6 +304,11 @@ enum TagFormLogic {
         return Array((ranked + additional).prefix(8))
     }
 
+    /// Where the Add Tag page opens when no category is requested.
+    static func defaultCategory(for mode: TrackingMode) -> TagCategory {
+        mode == .menopause ? .menopause : .symptom
+    }
+
     /// The category most used in this phase of past cycles: where the form opens in Cycle mode.
     static func topCategory(phase: Event.EventType?, blocks: [ArchivedDataBlock]) -> TagCategory? {
         guard let phase else { return nil }
@@ -341,6 +346,8 @@ extension TagCategory {
         case .other:         return "ellipsis"
         case .planning:      return "testtube.2"
         case .menopause:     return "flame"
+        case .skin:          return "face.smiling.inverse"
+        case .intimacy:      return "heart"
         }
     }
 }
@@ -359,6 +366,8 @@ enum TagBodyKind: Equatable {
     case basalTemp
     /// Counters for the repeatable tags, moon rows for the rest.
     case menopause
+    /// The skin log body (face and body map, chips).
+    case skin
     /// One-tap chips (Dietary, Exercise, Medication, Cervical Mucus, Other).
     case chips
 }
@@ -388,6 +397,8 @@ extension TagFormLogic {
         case .planning:  return .planning
         case .basalTemp: return .basalTemp
         case .menopause: return .menopause
+        case .skin:      return .skin
+        case .intimacy:  return .chips
         case .dietary, .exercise, .medication, .cervicalMucus, .other: return .chips
         }
     }
@@ -484,9 +495,31 @@ extension TagFormLogic {
     }
 
     static func trayAccessibilityLabel(_ item: TagSelection.Item) -> String {
-        if item.pick.isRepeatable { return item.count == 1 ? "\(item.pick.value), once" : "\(item.pick.value), \(item.count) times" }
-        if let level = item.intensity { return "\(item.pick.value), \(level.title)" }
-        return item.pick.value
+        let name = displayLabel(item.pick)
+        if item.pick.isRepeatable { return item.count == 1 ? "\(name), once" : "\(name), \(item.count) times" }
+        if let level = item.intensity { return "\(name), \(level.title)" }
+        return name
+    }
+
+    /// The text a pick is shown with: a Skin entry reads "Nose · Acne, Irritated" (`SkinTag.displayLabel`)
+    /// instead of its stored "Nose/Acne+Irritated"; every other tag shows its value.
+    static func displayLabel(_ pick: TagPick) -> String {
+        SkinTag.parse(pick.raw)?.displayLabel ?? pick.value
+    }
+
+    /// The tray item as drawn: the same item with its pick's value swapped for `displayLabel`.
+    /// Only for showing; removing still uses the item's own pick.
+    static func displayItem(_ item: TagSelection.Item) -> TagSelection.Item {
+        let label = displayLabel(item.pick)
+        guard label != item.pick.value else { return item }
+        return TagSelection.Item(pick: TagPick(category: item.pick.category, value: label),
+                                 count: item.count, intensity: item.intensity)
+    }
+
+    /// Where the Suggested and Recent rows go: below the category body for Skin, so the face map sits
+    /// right under the category strip and is not covered by the Add bar; above it for every other category.
+    static func suggestionsFollowBody(category: TagCategory) -> Bool {
+        category == .skin
     }
 
     // MARK: Intensity (moon control)
@@ -503,9 +536,11 @@ extension TagFormLogic {
     // MARK: Suggested row
 
     /// "For your <phase> phase": her own tags from this phase of past cycles first, then the phase picks
-    /// (`suggestionGroups`), each once. Menopause gets "Common in menopause"; a day with no phase in the
-    /// other modes gets nothing.
+    /// (`suggestionGroups`), each once. Menopause always gets "Common in menopause" (the phase is ignored);
+    /// a day with no phase in the other modes gets nothing.
     static func suggestedRow(phase: Event.EventType?, mode: TrackingMode, history: [TagPick], limit: Int = 12) -> TagSuggestionGroup? {
+        // Menopause has no cycle phases, even on a day that still holds a cycle event.
+        let phase = mode == .menopause ? nil : phase
         let groups = suggestionGroups(phase: phase, mode: mode)
         var seen = Set<TagPick>()
         let picks = (history + groups.flatMap(\.picks)).filter { seen.insert($0).inserted }.prefix(limit)

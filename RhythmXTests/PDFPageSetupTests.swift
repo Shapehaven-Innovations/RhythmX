@@ -109,12 +109,12 @@ final class PDFPageSetupTests: XCTestCase {
 
     /// The footer line is the lowest text on the page (every other glyph sits above it) and nothing is drawn
     /// outside the margins.
-    private func assertFooterIsLastAndNothingClips(_ data: Data, footer: String, _ label: String,
+    private func assertFooterIsLastAndNothingClips(_ data: Data, footer: String, _ label: String, pageIndex: Int = 0,
                                                    file: StaticString = #filePath, line: UInt = #line) throws {
         let doc = try XCTUnwrap(PDFDocument(data: data), file: file, line: line)
-        let page = try XCTUnwrap(doc.page(at: 0), file: file, line: line)
-        let found = try XCTUnwrap(doc.findString(footer, withOptions: []).first, "\(label): footer is on the page",
-                                  file: file, line: line)
+        let page = try XCTUnwrap(doc.page(at: pageIndex), file: file, line: line)
+        let found = try XCTUnwrap(doc.findString(footer, withOptions: []).first { $0.pages.contains(page) },
+                                  "\(label): footer is on the page", file: file, line: line)
         let footerBox = found.bounds(for: page)
         XCTAssertGreaterThan(page.numberOfCharacters, 50, "\(label): the page has text to check", file: file, line: line)
         let inside = page.bounds(for: .mediaBox).insetBy(dx: PDFDrawing.margin - 2, dy: PDFDrawing.margin - 2)
@@ -210,6 +210,48 @@ final class PDFPageSetupTests: XCTestCase {
                         XCTAssertTrue(text.contains("Months since last period"), "\(name): menopause tiles")
                         XCTAssertTrue(text.contains("Poor sleep"), "\(name): the last chart is on the page")
                     }
+                }
+            }
+        }
+    }
+
+    func testReportWithSkinAndSexIsTwoPagesOfExactSizeAndNothingClips() throws {
+        // Worst case: every area logged with long types and colours, and six cycles with sex logged.
+        let areas = SkinTag.Area.allCases
+        var blocks: [ArchivedDataBlock] = []
+        var start = date(2026, 3, 2)
+        for _ in 0..<7 {
+            var events = CycleGenerator.events(startDate: start, cycleLength: 28)
+            for (index, area) in areas.enumerated() {
+                events[index].tags = "Skin:\(area.rawValue)/Acne+Breakout+Irritated/Dark spots, Intimacy:Sex"
+                events[index + 13].tags = "Skin:\(area.rawValue)/Dry+Flaky/Pale, Planning:Intercourse"
+            }
+            let grouped = Dictionary(grouping: events, by: { $0.eventType })
+                .map { ArchivedDataBlock.PhaseEvents(eventType: $0.key, events: $0.value) }
+            blocks.append(ArchivedDataBlock(date: start, groupedEvents: grouped))
+            start = calendar.date(byAdding: .day, value: 28, to: start)!
+        }
+        let current = CycleGenerator.events(startDate: start, cycleLength: 28)
+        let report = DoctorReportBuilder.make(events: current, archivedBlocks: blocks, mode: .cycle, today: today)
+        XCTAssertEqual(report.skin?.areas.count, areas.count)
+        XCTAssertEqual(report.sexualActivity?.perCycle.count, DoctorReport.chartCycles)
+
+        let renderer = DoctorReportPDFRenderer(today: today)
+        for paper in PaperSize.allCases {
+            for orientation in PaperSize.Orientation.allCases {
+                let name = "report skin \(paper) \(orientation)"
+                let data = renderer.render(report, paper: paper, orientation: orientation,
+                                           name: "Jane Example", birthDate: date(1988, 4, 23))
+                let doc = try XCTUnwrap(PDFDocument(data: data))
+                XCTAssertEqual(doc.pageCount, 2, "\(name): the sections go on a second page")
+                for index in 0..<doc.pageCount {
+                    XCTAssertEqual(doc.page(at: index)?.bounds(for: .mediaBox).size, paper.size(orientation), name)
+                    try assertFooterIsLastAndNothingClips(data, footer: DoctorReportPDFRenderer.disclaimer,
+                                                          "\(name) page \(index + 1)", pageIndex: index)
+                }
+                let second = doc.page(at: 1)?.string ?? ""
+                for part in ["Skin", "Shoulders", "Other", "Sexual activity", "(current)", "Luteal"] {
+                    XCTAssertTrue(second.contains(part), "\(name): \(part)")
                 }
             }
         }

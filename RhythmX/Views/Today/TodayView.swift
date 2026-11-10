@@ -32,6 +32,7 @@ struct TodayView: View {
     @State private var showShare = false
     @State private var showLogPeriod = false
     @State private var periodLogged = 0
+    @State private var showSkin = false
     /// Bumped at midnight (and other significant time changes) and when the app becomes active, so the
     /// insights are written again for the new day.
     @State private var clockTick = 0
@@ -62,6 +63,9 @@ struct TodayView: View {
         let palette = AuraPalette.make(phase: mode == .menopause ? nil : snapshot.phase, theme: DS.Theme.current,
                                        isDark: colorScheme == .dark, hour: Calendar.current.component(.hour, from: today))
         let alreadyLogged = mode != .menopause && PeriodStartPlan.alreadyStartedToday(snapshot: snapshot)
+        let skinStats = SkinStats(events: myEvents.events, archivedBlocks: archivedDataStore.archivedBlocks,
+                                  today: today, window: .all)
+        let todaySkin = Self.skinTags(on: today, events: myEvents.events)
 
         NavigationStack {
             ScrollView {
@@ -121,6 +125,13 @@ struct TodayView: View {
                             .padding(.top, DS.Spacing.sm)
                     }
 
+                    SkinTodayCard(stats: skinStats, todayPhase: mode == .menopause ? nil : snapshot.phase,
+                                  cycleDay: snapshot.cycleDay, mode: mode, todaySkin: todaySkin,
+                                  onLog: { tagForm = TagFormRoute(category: .skin) },
+                                  onDetails: { showSkin = true })
+                        .padding(.horizontal, DS.Spacing.md)
+                        .padding(.top, DS.Spacing.lg)
+
                     Text("Insights")
                         .font(.title2.bold())
                         .foregroundColor(DS.Color.primaryText)
@@ -141,6 +152,7 @@ struct TodayView: View {
             .themedPage(animated: true, shootingStars: true)
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(isPresented: $showShare) { ShareRhythmView() }
+            .navigationDestination(isPresented: $showSkin) { SkinInsightsView(now: now) }
         }
         .sheet(item: $tagForm) { route in
             TagFormView(initialCategory: route.category)
@@ -334,6 +346,13 @@ struct TodayView: View {
             choices: choices, patternPick: patternPick, shareKinds: Set(cards.map(\.kind)))
         return DailyInsightDetailModel(tile: tile, content: content, facts: facts, mode: mode, phase: phase,
                                        today: today, shareCard: cards.first { $0.kind == content.shareKind })
+    }
+
+    /// Today's skin logs (legacy acne as Face/Acne), for the skin card's face map below the minimum.
+    static func skinTags(on day: Date, events: [Event], calendar: Calendar = .current) -> [SkinTag] {
+        events.filter { calendar.isDate($0.date, inSameDayAs: day) }
+            .flatMap { TagParser.split($0.tags) }
+            .compactMap(SkinTag.parseAny)
     }
 
     // MARK: - Actions
