@@ -274,6 +274,8 @@ struct TodayView: View {
                 }
                 .padding(.horizontal, DS.Spacing.md)
             } else {
+                // Read once here: the scroll transition closure below is Sendable and cannot touch main actor state.
+                let motionReduced = reduceMotion
                 ScrollView(.horizontal) {
                     // One low rate clock floats every tile, and only while `ambientMotion` allows it.
                     TimelineView(.animation(minimumInterval: AmbientMotion.minimumInterval, paused: !ambientMotion)) { timeline in
@@ -284,8 +286,8 @@ struct TodayView: View {
                                     .offset(y: AmbientMotion.floatOffset(index: index, at: t))
                                     .scrollTransition(.interactive, axis: .horizontal) { content, phase in
                                         content
-                                            .offset(y: reduceMotion ? 0 : abs(phase.value) * 6)
-                                            .scaleEffect(reduceMotion ? 1 : 1 - abs(phase.value) * 0.04)
+                                            .offset(y: motionReduced ? 0 : abs(phase.value) * 6)
+                                            .scaleEffect(motionReduced ? 1 : 1 - abs(phase.value) * 0.04)
                                     }
                             }
                         }

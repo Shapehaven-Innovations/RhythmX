@@ -5,12 +5,12 @@
 //  Created by user on 9/27/24.
 //
 //  The Add Tags sheet. A glass close button, the title with the day, cycle day and phase (tap it to log
-//  another day), a confirm button, then one search over every category, the "For your <phase> phase" row
+//  another day), then one search over every category, the "For your <phase> phase" row
 //  (Smart Tags from past cycles plus the phase picks), Recent, the category strip and the category's body:
 //  Symptom rows with a three-step moon strength (crescent light, half medium, full heavy), the Mood glyph
 //  grid, the Planning ovulation test strip with its info circle and two toggles, the Basal Temp entry with
 //  the Apple Health suggestion, the Menopause counters and strength rows, and chips for the rest.
-//  Picked tags collect in the glass tray above "Add N Tags". Logging still goes through EventStore.logTag,
+//  Picked tags collect in the glass tray above the one "Add N Tags" button. Logging still goes through EventStore.logTag,
 //  one "Category:Value" string at a time, so stored formats and the duplicate rules are unchanged.
 //  The pure logic lives in Services/TagFormLogic.swift.
 
@@ -193,7 +193,10 @@ struct TagFormView: View {
     /// A normal tag toggles; a repeatable one adds another each tap (the tray takes them away again).
     private func tap(_ pick: TagPick) {
         animate {
-            if TagFormLogic.isOvulationTest(pick) {
+            if let skin = SkinTag.parse(pick.raw), pick.category == .skin {
+                // One Skin entry per area: a Recent tap replaces the area's entry instead of doubling it.
+                selection.setSkin(selection.contains(pick) ? nil : skin, area: skin.area)
+            } else if TagFormLogic.isOvulationTest(pick) {
                 TagFormLogic.chooseOvulationTest(pick, in: &selection)
             } else if pick.isRepeatable {
                 selection.increment(pick)
@@ -216,8 +219,8 @@ struct TagFormView: View {
                                     phase: currentPhaseType, mode: mode)
     }
 
-    /// At accessibility sizes the close and confirm buttons sit on their own row above the title, so the
-    /// title and day get the full width.
+    /// At accessibility sizes the close button sits on its own row above the title, so the title and day
+    /// get the full width. Otherwise an invisible spacer balances the close button so the title stays centred.
     @ViewBuilder
     private var header: some View {
         if dynamicTypeSize.isAccessibilitySize {
@@ -225,7 +228,6 @@ struct TagFormView: View {
                 HStack {
                     closeButton
                     Spacer()
-                    confirmButton
                 }
                 headerTitle
             }
@@ -233,7 +235,7 @@ struct TagFormView: View {
             HStack(alignment: .center, spacing: DS.Spacing.sm) {
                 closeButton
                 headerTitle
-                confirmButton
+                Color.clear.frame(width: 44, height: 44).accessibilityHidden(true)
             }
         }
     }
@@ -245,17 +247,6 @@ struct TagFormView: View {
         .buttonStyle(.glass)
         .buttonBorderShape(.circle)
         .accessibilityLabel("Close")
-    }
-
-    private var confirmButton: some View {
-        Button(action: save) {
-            Image(systemName: "checkmark").font(.body.weight(.bold)).frame(width: 30, height: 30)
-        }
-        .buttonStyle(.glassProminent)
-        .buttonBorderShape(.circle)
-        .tint(DS.Color.accent)
-        .disabled(!canSave)
-        .accessibilityLabel(TagFormLogic.addButtonTitle(count: pickCount))
     }
 
     private var headerTitle: some View {
@@ -951,8 +942,17 @@ struct TagFormView: View {
                     .scrollIndicators(.hidden)
                 }
             }
+            if !dayCanHoldTags {
+                // The same reason as the note at the top of the sheet, kept beside the button so it is never off screen.
+                Label("No cycle day on this date, so tags can't be saved. Tap the date to pick another day.",
+                      systemImage: "calendar.badge.exclamationmark")
+                    .font(.footnote)
+                    .foregroundColor(DS.Color.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 4)
+            }
             Button(action: save) {
-                Text(TagFormLogic.addButtonTitle(count: pickCount))
+                Text(dayCanHoldTags ? TagFormLogic.addButtonTitle(count: pickCount) : "Pick a cycle day")
                     .font(.headline)
                     .foregroundColor(DS.Color.onAccent)
                     .frame(maxWidth: .infinity)
@@ -962,7 +962,7 @@ struct TagFormView: View {
             }
             .buttonStyle(.plain)
             .disabled(!canSave)
-            .accessibilityHint(canSave ? "Saves the picked tags to this day" : "Pick a tag first")
+            .accessibilityHint(canSave ? "Saves the picked tags to this day" : (dayCanHoldTags ? "Pick a tag first" : "This day is outside your cycle. Tap the date to pick another day."))
         }
         .padding(12)
         .background(

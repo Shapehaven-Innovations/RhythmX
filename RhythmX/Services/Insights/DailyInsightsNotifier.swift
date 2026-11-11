@@ -49,7 +49,7 @@ actor SerialJobQueue {
         let previous = tail
         let task = Task {
             await previous?.value
-            guard await self.claim(ticket) else { return }
+            guard self.claim(ticket) else { return }
             await job()
         }
         tail = task

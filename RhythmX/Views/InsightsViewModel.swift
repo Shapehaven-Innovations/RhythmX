@@ -81,9 +81,9 @@ struct InsightsViewModel {
                     .filter { !$0.isEmpty }
                     .forEach { tag in
                         let parts = tag.split(separator: ":", maxSplits: 1)
-                        let catName = parts.count == 2
+                        let catName = Self.chartCategory(parts.count == 2
                             ? String(parts[0]).trimmingCharacters(in: .whitespaces)
-                            : "Other"
+                            : "Other")
                         catFreq[catName, default: 0] += 1
                     }
             }
@@ -225,9 +225,15 @@ struct InsightsViewModel {
     /// The menstrual categories the legend always lists.
     static let cycleCategoryNames = ["Symptom", "Mood", "Dietary", "Exercise", "Medication", "Cervical Mucus", "Basal Temp", "Other"]
     /// Every category, in legend order; also the chart's color scale domain.
-    static let categoryNames = cycleCategoryNames + ["Planning", "Menopause"]
+    /// A value outside this list traps inside Swift Charts, so every tag category must be here.
+    static let categoryNames = cycleCategoryNames + ["Planning", "Menopause", "Skin", "Intimacy"]
 
-    /// The menstrual categories always; Planning and Menopause only once a tag of theirs is in the data,
+    /// The chart category for a stored tag's prefix; anything unlisted counts as "Other" rather than crash the chart.
+    static func chartCategory(_ name: String) -> String {
+        categoryNames.contains(name) ? name : "Other"
+    }
+
+    /// The menstrual categories always; the rest (Planning, Menopause, Skin, Intimacy) only once a tag of theirs is in the data,
     /// so Cycle-mode Insights look as they did before the modes existed.
     var categoryLegendItems: [(name: String, color: Color)] {
         let present = Set(stackedTagData.map(\.categoryName))

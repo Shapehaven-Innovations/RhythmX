@@ -285,8 +285,7 @@ struct OnboardingPhasesPage: View {
                     HStack(alignment: .firstTextBaseline, spacing: 10) {
                         MoonPhaseView(phase: phase.moonPhase, color: phase.defaultPhaseColor, size: 18)
                             .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 5 }
-                        (Text(power).bold().foregroundColor(phase.defaultPhaseColor)
-                         + Text(" " + phase.rawValue.capitalized).foregroundColor(DS.Color.secondaryText))
+                        Text("\(Text(power).bold().foregroundColor(phase.defaultPhaseColor))\(Text(" " + phase.rawValue.capitalized).foregroundColor(DS.Color.secondaryText))")
                             .font(.body)
                             .fixedSize(horizontal: false, vertical: true)
                     }

@@ -222,8 +222,7 @@ struct SkinInsightsView: View {
     /// "Chin 62%" in bold, the rest in secondary, as in the mockup.
     private func comparisonText(_ line: String) -> some View {
         let split = line.firstIndex(of: "%").map { line.index(after: $0) } ?? line.startIndex
-        return (Text(line[..<split]).foregroundColor(DS.Color.primaryText).bold()
-                + Text(line[split...]).foregroundColor(DS.Color.secondaryText))
+        return Text("\(Text(line[..<split]).foregroundColor(DS.Color.primaryText).bold())\(Text(line[split...]).foregroundColor(DS.Color.secondaryText))")
             .font(DS.Font.label)
             .fixedSize(horizontal: false, vertical: true)
     }

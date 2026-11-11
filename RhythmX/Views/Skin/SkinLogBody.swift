@@ -2,8 +2,8 @@
 //
 //  The Skin category body of the Add Tags sheet. Two styles build the same composite tag:
 //  Chips (Where, What, Colour cards) and Body map (Face, Body front, Body back, then one card for the
-//  picked area). "Add" puts one `TagPick(category: .skin, ...)` in the tray, replacing any tray pick for
-//  the same area; saving goes through the tray like every other tag. At accessibility text sizes the
+//  picked area). Picks sync live into one `TagPick(category: .skin, ...)` in the tray, replacing any tray pick for
+//  the same area; the sheet's "Add Tags" button saves them like every other tag. At accessibility text sizes the
 //  map is hidden and the Chips style is used.
 
 import SwiftUI
@@ -57,6 +57,10 @@ struct SkinLogBody: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, DS.Spacing.md)
         }
+        .onChange(of: area) { _, _ in areaChanged() }
+        .onChange(of: kinds) { _, _ in syncTray() }
+        .onChange(of: colour) { _, _ in syncTray() }
+        .onChange(of: trayRaw) { _, _ in trayChanged() }
     }
 
     private func animate(_ change: () -> Void) {
@@ -87,20 +91,12 @@ struct SkinLogBody: View {
                 stepHeader(3, "Colour", note: "optional")
                     .padding(.top, 4)
                 colourChips
-                PrimaryButton(title: addTitle, action: add, isDisabled: draft == nil)
-                    .padding(.top, 4)
             }
             .padding(DS.Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(CardSurface())
             .padding(.horizontal, 12)
         }
-    }
-
-    private var addTitle: String {
-        if let draft { return "Add " + draft.displayLabel }
-        if let area { return "Add " + area.rawValue }
-        return "Add"
     }
 
     private func stepHeader(_ number: Int, _ title: String, note: String) -> some View {
@@ -223,8 +219,6 @@ struct SkinLogBody: View {
                 .accessibilityAddTraits(.isHeader)
                 kindChips
                 colourChips
-                PrimaryButton(title: "Add to \(area.rawValue)", action: add, isDisabled: draft == nil)
-                    .padding(.top, 4)
             } else {
                 Text("Tap an area on the map to describe it.")
                     .font(.subheadline)
@@ -238,20 +232,35 @@ struct SkinLogBody: View {
         .padding(.horizontal, 12)
     }
 
-    // MARK: - Add
+    // MARK: - Tray sync
 
-    /// One tray entry per area: a new entry for an area replaces the tray's earlier one.
-    private func add() {
-        guard let tag = draft else { return }
-        animate {
-            for item in selection.items where item.pick.category == .skin
-                && SkinTag.parse(item.pick.raw)?.area == tag.area {
-                selection.remove(item.pick)
-            }
-            selection.add(TagPick(category: .skin, value: tag.value))
+    /// The tray's pick for the area being edited, if any.
+    private var trayRaw: String? {
+        guard let area else { return nil }
+        return selection.items.first { $0.pick.category == .skin && SkinTag.parse($0.pick.raw)?.area == area }?.pick.raw
+    }
+
+    /// Picking an area opens its tray entry (if any) for editing; otherwise starts blank.
+    private func areaChanged() {
+        if let raw = trayRaw, let tag = SkinTag.parse(raw) {
+            kinds = Set(tag.kinds)
+            colour = tag.colour
+        } else {
             kinds = []
             colour = nil
         }
+    }
+
+    /// Keeps one tray entry per area in step with the picks; the sheet's bottom "Add Tags" button saves it.
+    private func syncTray() {
+        guard let area, draft?.raw != trayRaw else { return }
+        animate { selection.setSkin(draft, area: area) }
+    }
+
+    /// The tray changed under the card (chip removed, or a Recent tag added): load it into the card.
+    private func trayChanged() {
+        guard trayRaw != draft?.raw else { return }
+        areaChanged()
     }
 }
 

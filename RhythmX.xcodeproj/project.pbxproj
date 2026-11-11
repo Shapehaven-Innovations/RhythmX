@@ -100,6 +100,7 @@
 		639D663C5B1EFDC4FCF1BCB5 /* OnboardingFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3626A75B74FCE676354A5905 /* OnboardingFlowTests.swift */; };
 		63D0075958241A1B853BDE4D /* PhaseRingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5DD4A676D24934843EE5550 /* PhaseRingView.swift */; };
 		6470B36942F23C8E97A2ADDA /* PhaseWidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13BD7FD863E3D2ABBE15B680 /* PhaseWidgetSnapshot.swift */; };
+		660370BF6B19507A8DED0EE6 /* InsightsChartCategoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5ABEA49DEEA5FAD7ADE2B627 /* InsightsChartCategoryTests.swift */; };
 		6683D43B22FFD249C1B551AA /* LegalLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDACC3114A6523C4E9EF0609 /* LegalLinks.swift */; };
 		6710A3220BC6A066E787C243 /* NotificationSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6587E3D85B8E1609C5A740D /* NotificationSettings.swift */; };
 		693A2A8568E8A50417E7DE65 /* HealthMappingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C73AF43E24BA5BF12618EFA5 /* HealthMappingTests.swift */; };
@@ -196,6 +197,7 @@
 		B7662441868833EAD49385F5 /* TodayHome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FA6F18EFC11595E8D22DC3D /* TodayHome.swift */; };
 		B81CD55C75DD848BBB00DDC3 /* WeekStripWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F264E6C5BBAE9B61CA175A6C /* WeekStripWidget.swift */; };
 		BADBF201347EA3CA8F763755 /* ModeGuideContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD02724598754311FF18E3DD /* ModeGuideContent.swift */; };
+		BBCDFB2CD500E66CBAD959CF /* SkinTapFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CCCE68685BF75407CD4B3C1 /* SkinTapFlowTests.swift */; };
 		BBEF39C7877DB84055CB6980 /* PlanningInsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D59C233A2F415D16F883D4A7 /* PlanningInsightsView.swift */; };
 		BC9E3DDC8352F7A22A5F1962 /* DoctorReportPDFRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65CA4B9F7954C5DF652EA2A8 /* DoctorReportPDFRenderer.swift */; };
 		BD70B3BC3408EB5446ACE90F /* TodayWeekStripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DAC2607A77901A9B4E4581C /* TodayWeekStripView.swift */; };
@@ -307,6 +309,7 @@
 		1A0777E305B273B00F5A443E /* TagParser.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TagParser.swift; path = Services/TagParser.swift; sourceTree = "<group>"; };
 		1B8A4E2A98CBFA1B69A392F8 /* InsightDetailContent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = InsightDetailContent.swift; path = ../Services/Insights/InsightDetailContent.swift; sourceTree = "<group>"; };
 		1C94D2574A8E9117EF67945A /* SkinStats.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SkinStats.swift; path = Services/SkinStats.swift; sourceTree = "<group>"; };
+		1CCCE68685BF75407CD4B3C1 /* SkinTapFlowTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SkinTapFlowTests.swift; sourceTree = "<group>"; };
 		1D278A81EEFE79DE946506D1 /* InfoCopyTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InfoCopyTests.swift; sourceTree = "<group>"; };
 		1D5FC4854FB5355529D1CFA4 /* InsightFacts.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = InsightFacts.swift; path = ../Services/Insights/InsightFacts.swift; sourceTree = "<group>"; };
 		1DE38CA8A025188CC64B27A8 /* PhaseTimelineProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PhaseTimelineProvider.swift; sourceTree = "<group>"; };
@@ -380,6 +383,7 @@
 		58D525D5AC7874885E031351 /* LegacySnapshot.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = LegacySnapshot.swift; path = ../Services/Backup/LegacySnapshot.swift; sourceTree = "<group>"; };
 		5A2277A8D0D54815C688A7A0 /* InsightRevealTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InsightRevealTests.swift; sourceTree = "<group>"; };
 		5A9430E84FF21956A852CF6F /* PatternSummaryProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PatternSummaryProvider.swift; path = ../Services/Insights/PatternSummaryProvider.swift; sourceTree = "<group>"; };
+		5ABEA49DEEA5FAD7ADE2B627 /* InsightsChartCategoryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InsightsChartCategoryTests.swift; sourceTree = "<group>"; };
 		5BBF48C6475EE04BA9DB8933 /* CycleGeneratorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CycleGeneratorTests.swift; sourceTree = "<group>"; };
 		5BDF3DAA61A86B6445F85CED /* NotificationsPage.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = NotificationsPage.swift; path = Services/NotificationsPage.swift; sourceTree = "<group>"; };
 		5E8ECEFDF119A92EA1122A56 /* CycleStatsTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CycleStatsTests.swift; sourceTree = "<group>"; };
@@ -515,7 +519,17 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		9A0FE6982D355A1200E5BBDA /* License */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = License; sourceTree = "<group>"; };
+		9A0FE6982D355A1200E5BBDA /* License */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = License;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -683,6 +697,8 @@
 				85D02572C902FBE7CE121F60 /* SkinStoreRulesTests.swift */,
 				8153A0FFE240B6EAD904BBB4 /* SkinStatsTests.swift */,
 				1125999C6AC441245F1F0913 /* SkinScreenshotTests.swift */,
+				1CCCE68685BF75407CD4B3C1 /* SkinTapFlowTests.swift */,
+				5ABEA49DEEA5FAD7ADE2B627 /* InsightsChartCategoryTests.swift */,
 			);
 			path = RhythmXTests;
 			sourceTree = "<group>";
@@ -1344,6 +1360,8 @@
 				E296C4FE9A959F14C3DEE5B4 /* SkinStoreRulesTests.swift in Sources */,
 				521ABFE1AF0E4CC760334F9C /* SkinStatsTests.swift in Sources */,
 				3376CBA0CA9867E587A2CF00 /* SkinScreenshotTests.swift in Sources */,
+				BBCDFB2CD500E66CBAD959CF /* SkinTapFlowTests.swift in Sources */,
+				660370BF6B19507A8DED0EE6 /* InsightsChartCategoryTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1371,7 +1389,7 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = RhythmXWidget/RhythmXWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = P9Z5QB8965;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RhythmXWidget/Info.plist;
@@ -1540,7 +1558,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = RhythmX/RhythmXDebugSimulator.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 0;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"RhythmX/Preview Content\"";
 				DEVELOPMENT_TEAM = P9Z5QB8965;
 				ENABLE_PREVIEWS = YES;
@@ -1580,7 +1598,7 @@
 				CODE_SIGN_ENTITLEMENTS = RhythmX/RhythmX.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 0;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"RhythmX/Preview Content\"";
 				DEVELOPMENT_TEAM = P9Z5QB8965;
 				ENABLE_PREVIEWS = YES;
@@ -1636,7 +1654,7 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = RhythmXWidget/RhythmXWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = P9Z5QB8965;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RhythmXWidget/Info.plist;

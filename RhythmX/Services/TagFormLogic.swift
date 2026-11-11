@@ -70,6 +70,20 @@ struct TagSelection: Equatable {
         items.removeAll { $0.pick == pick }
     }
 
+    /// Holds at most one Skin entry per area: puts `tag` in the tray, in the place of the area's earlier
+    /// entry (or at the end), and drops any other entry for that area. A nil `tag` clears the area.
+    mutating func setSkin(_ tag: SkinTag?, area requested: SkinTag.Area) {
+        let area = tag?.area ?? requested
+        func isArea(_ item: Item) -> Bool {
+            item.pick.category == .skin && SkinTag.parse(item.pick.raw)?.area == area
+        }
+        let slot = items.firstIndex(where: isArea)
+        items.removeAll(where: isArea)
+        guard let tag else { return }
+        let item = Item(pick: TagPick(category: .skin, value: tag.value), count: 1)
+        items.insert(item, at: min(slot ?? items.count, items.count))
+    }
+
     /// Sets the pick's level directly (VoiceOver adjust, the custom tag strength): a level holds the pick at
     /// it (adding it when absent), nil removes the pick.
     mutating func set(_ pick: TagPick, level: TagIntensity?) {
