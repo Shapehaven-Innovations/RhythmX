@@ -198,6 +198,7 @@ struct SkinInsightsView: View {
         VStack(alignment: .leading, spacing: DS.Spacing.sm) {
             cardHeader("Face", subtitle: subtitle(stats))
             FaceCalloutFigure(percents: percents, maxMapWidth: Self.faceMapMaxWidth)
+                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, DS.Spacing.xs)
             legend
@@ -303,6 +304,7 @@ struct SkinInsightsView: View {
             let head = Self.headValue(percents)
             BodyCalloutFigure(percents: Self.withHead(percents, head?.percent),
                               headSource: head?.area)
+                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 .padding(.vertical, DS.Spacing.xs)
             legend
             Text("% of logged days with a flare-up in that area")
@@ -551,6 +553,12 @@ private struct BodyCalloutFigure: View {
     /// The face sub-area whose percent the head shows.
     let headSource: SkinTag.Area?
 
+    // Callout text follows Dynamic Type (up to xxxLarge: the columns around the figures are fixed in width).
+    @ScaledMetric(relativeTo: .caption2) private var nameSize: CGFloat = 10
+    @ScaledMetric(relativeTo: .footnote) private var valueSize: CGFloat = 14
+    @ScaledMetric(relativeTo: .caption2) private var insideNameSize: CGFloat = 9.5
+    @ScaledMetric(relativeTo: .caption2) private var captionSize: CGFloat = 11
+
     /// Callout column width on each side, as a share of the figure width (about 60pt on a 6.1" iPhone).
     private static let calloutShare: CGFloat = 0.16
     /// Share of each map's width that the callout column may overlap (the silhouettes' empty margin).
@@ -648,23 +656,23 @@ private struct BodyCalloutFigure: View {
     private func calloutLabel(_ area: SkinTag.Area, alignment: HorizontalAlignment) -> some View {
         VStack(alignment: alignment, spacing: 0) {
             Text(area.rawValue)
-                .font(.system(size: 10))
+                .font(.system(size: nameSize))
                 .foregroundColor(DS.Color.secondaryText)
             Text(value(area).map { "\($0)%" } ?? "–")
-                .font(.system(size: 14, weight: .bold).monospacedDigit())
+                .font(.system(size: valueSize, weight: .bold).monospacedDigit())
                 .foregroundColor(DS.Color.primaryText)
         }
         .lineLimit(1)
-        .minimumScaleFactor(0.7)
+        .minimumScaleFactor(0.6)
     }
 
     private func insideLabel(_ area: SkinTag.Area, at point: CGPoint) -> some View {
         let percent = value(area)
         return VStack(spacing: 0) {
             Text(area.rawValue)
-                .font(.system(size: 9.5, weight: .semibold))
+                .font(.system(size: insideNameSize, weight: .semibold))
             Text(percent.map { "\($0)%" } ?? "–")
-                .font(.system(size: 14, weight: .bold).monospacedDigit())
+                .font(.system(size: valueSize, weight: .bold).monospacedDigit())
         }
         .foregroundColor(percent == nil ? DS.Color.secondaryText : SkinRamp.textColor(percent: percent))
         .lineLimit(1)
@@ -682,7 +690,7 @@ private struct BodyCalloutFigure: View {
 
     private func sideCaption(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 11, weight: .semibold))
+            .font(.system(size: captionSize, weight: .semibold))
             .kerning(1.2)
             .foregroundColor(DS.Color.secondaryText)
     }
@@ -696,6 +704,9 @@ private struct BodyCalloutFigure: View {
 private struct FaceCalloutFigure: View {
     let percents: [SkinTag.Area: Int?]
     let maxMapWidth: CGFloat
+
+    @ScaledMetric(relativeTo: .caption) private var nameSize: CGFloat = 11
+    @ScaledMetric(relativeTo: .callout) private var valueSize: CGFloat = 16
 
     /// Callout column width on each side, as a share of the figure width.
     private static let calloutShare: CGFloat = 0.17
@@ -782,10 +793,10 @@ private struct FaceCalloutFigure: View {
         // "Face" alone would echo the card title; the band is the whole-face tag.
         return VStack(alignment: alignment, spacing: 0) {
             Text(area == .face ? "Whole face" : area.rawValue)
-                .font(.system(size: 11))
+                .font(.system(size: nameSize))
                 .foregroundColor(DS.Color.secondaryText)
             Text(value.map { "\($0)%" } ?? "–")
-                .font(.system(size: 16, weight: .bold).monospacedDigit())
+                .font(.system(size: valueSize, weight: .bold).monospacedDigit())
                 .foregroundColor(DS.Color.primaryText)
         }
         .lineLimit(1)

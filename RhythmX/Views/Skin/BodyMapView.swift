@@ -35,6 +35,8 @@ struct BodyMapView: View {
     var spokenValueOverrides: [SkinTag.Area: String] = [:]
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// The 11pt floor for pick labels grows with Dynamic Type.
+    @ScaledMetric(relativeTo: .caption) private var pickFloor: CGFloat = 11
 
     private var isPick: Bool { if case .pick = mode { return true } else { return false } }
     /// Today card: a Whole face tag has no region of its own, so it tints every face zone that has no value.
@@ -174,7 +176,7 @@ struct BodyMapView: View {
 
     private func nameSize(_ rect: CGRect) -> CGFloat { rect.width * (side == .face ? 0.055 : 0.042) }
     /// Pick labels never go under 11pt.
-    private func pickNameSize(_ rect: CGRect) -> CGFloat { max(11, nameSize(rect)) }
+    private func pickNameSize(_ rect: CGRect) -> CGFloat { max(pickFloor, nameSize(rect)) }
 
     /// Approximate size of a pill, from its text.
     private func pillSize(_ region: BodyMapRegion, in rect: CGRect) -> CGSize {
