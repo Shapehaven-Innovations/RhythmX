@@ -552,9 +552,9 @@ private struct BodyCalloutFigure: View {
     let headSource: SkinTag.Area?
 
     /// Callout column width on each side, as a share of the figure width (about 60pt on a 6.1" iPhone).
-    private static let calloutShare: CGFloat = 0.18
+    private static let calloutShare: CGFloat = 0.16
     /// Share of each map's width that the callout column may overlap (the silhouettes' empty margin).
-    private static let overlap: CGFloat = 0.10
+    private static let overlap: CGFloat = 0.115
     /// Map width as a share of the figure width.
     private static let mapShare: CGFloat = (1 - 2 * calloutShare) / (2 - 2 * overlap)
 
@@ -565,15 +565,19 @@ private struct BodyCalloutFigure: View {
         var id: String { area.rawValue }
     }
 
+    /// The figure is shorter than the callout stack needs, so it sits centred in a container this much taller
+    /// than the figure. `anchor` is a unit point on the map; `labelY` is a share of the container height.
+    private static let containerStretch: CGFloat = 1.45
+
     private static let frontCallouts = [
-        Callout(area: .face, anchor: CGPoint(x: 0.36, y: 0.075), labelY: 0.05),
-        Callout(area: .neck, anchor: CGPoint(x: 0.44, y: 0.17), labelY: 0.17),
-        Callout(area: .shoulders, anchor: CGPoint(x: 0.22, y: 0.215), labelY: 0.29),
-        Callout(area: .arms, anchor: CGPoint(x: 0.13, y: 0.40), labelY: 0.41),
+        Callout(area: .face, anchor: CGPoint(x: 0.425, y: 0.12), labelY: 0.12),
+        Callout(area: .neck, anchor: CGPoint(x: 0.468, y: 0.26), labelY: 0.34),
+        Callout(area: .shoulders, anchor: CGPoint(x: 0.312, y: 0.352), labelY: 0.56),
+        Callout(area: .arms, anchor: CGPoint(x: 0.276, y: 0.611), labelY: 0.80),
     ]
     private static let backCallouts = [
-        Callout(area: .shoulders, anchor: CGPoint(x: 0.78, y: 0.215), labelY: 0.215),
-        Callout(area: .arms, anchor: CGPoint(x: 0.87, y: 0.40), labelY: 0.40),
+        Callout(area: .shoulders, anchor: CGPoint(x: 0.659, y: 0.352), labelY: 0.34),
+        Callout(area: .arms, anchor: CGPoint(x: 0.724, y: 0.611), labelY: 0.70),
     ]
 
     var body: some View {
@@ -583,30 +587,32 @@ private struct BodyCalloutFigure: View {
                 let c = Self.calloutShare * w
                 let m = Self.mapShare * w
                 let h = m * BodyMapShapes.bodyAspect
+                let full = h * Self.containerStretch
+                let y0 = (full - h) / 2
                 let frontX = c - Self.overlap * m
                 let backX = frontX + m
                 ZStack(alignment: .topLeading) {
                     BodyMapView(side: .front, mode: .display(percentByArea: percents, showsLabels: false), width: m,
                                 spokenValueOverrides: headSpokenValue)
-                        .offset(x: frontX)
+                        .offset(x: frontX, y: y0)
                     BodyMapView(side: .back, mode: .display(percentByArea: percents, showsLabels: false), width: m)
-                        .offset(x: backX)
+                        .offset(x: backX, y: y0)
 
                     Group {
-                        insideLabel(.chest, at: CGPoint(x: frontX + 0.5 * m, y: 0.33 * h))
-                        insideLabel(.back, at: CGPoint(x: backX + 0.5 * m, y: 0.38 * h))
+                        insideLabel(.chest, at: CGPoint(x: frontX + 0.5 * m, y: y0 + 0.455 * h))
+                        insideLabel(.back, at: CGPoint(x: backX + 0.5 * m, y: y0 + 0.575 * h))
 
                         ForEach(Self.frontCallouts) { callout in
-                            let anchor = CGPoint(x: frontX + callout.anchor.x * m, y: callout.anchor.y * h)
-                            let labelY = callout.labelY * h
+                            let anchor = CGPoint(x: frontX + callout.anchor.x * m, y: y0 + callout.anchor.y * h)
+                            let labelY = callout.labelY * full
                             leader(from: CGPoint(x: c - 2, y: labelY), to: anchor)
                             calloutLabel(callout.area, alignment: .trailing)
                                 .frame(width: c - 4, alignment: .trailing)
                                 .position(x: (c - 4) / 2, y: labelY)
                         }
                         ForEach(Self.backCallouts) { callout in
-                            let anchor = CGPoint(x: backX + callout.anchor.x * m, y: callout.anchor.y * h)
-                            let labelY = callout.labelY * h
+                            let anchor = CGPoint(x: backX + callout.anchor.x * m, y: y0 + callout.anchor.y * h)
+                            let labelY = callout.labelY * full
                             let columnX = w - c
                             leader(from: CGPoint(x: columnX + 2, y: labelY), to: anchor)
                             calloutLabel(callout.area, alignment: .leading)
@@ -617,7 +623,7 @@ private struct BodyCalloutFigure: View {
                     .accessibilityHidden(true)
                 }
             }
-            .aspectRatio(1 / (Self.mapShare * BodyMapShapes.bodyAspect), contentMode: .fit)
+            .aspectRatio(1 / (Self.mapShare * BodyMapShapes.bodyAspect * Self.containerStretch), contentMode: .fit)
 
             // FRONT and BACK under the centre of each map.
             GeometryReader { geo in
@@ -656,9 +662,9 @@ private struct BodyCalloutFigure: View {
         let percent = value(area)
         return VStack(spacing: 0) {
             Text(area.rawValue)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: 9.5, weight: .semibold))
             Text(percent.map { "\($0)%" } ?? "–")
-                .font(.system(size: 15, weight: .bold).monospacedDigit())
+                .font(.system(size: 14, weight: .bold).monospacedDigit())
         }
         .foregroundColor(percent == nil ? DS.Color.secondaryText : SkinRamp.textColor(percent: percent))
         .lineLimit(1)
@@ -696,7 +702,7 @@ private struct FaceCalloutFigure: View {
     /// Share of the map's width the callout column may overlap (the margin left and right of the face oval).
     private static let overlap: CGFloat = 0.08
     private static let mapShare: CGFloat = (1 - 2 * calloutShare) / (1 - 2 * overlap)
-    private static let calloutAreas: Set<SkinTag.Area> = [.nose, .jaw, .face]
+    private static let calloutAreas: Set<SkinTag.Area> = [.nose, .jaw]
 
     private struct Callout: Identifiable {
         let id: String
@@ -708,13 +714,37 @@ private struct FaceCalloutFigure: View {
 
     /// Anchors sit in each region's widest visible part; label heights keep clear of the ears (y 0.44 to 0.60).
     private static let callouts = [
-        Callout(id: "face", area: .face, anchor: CGPoint(x: 0.25, y: 0.35), labelY: 0.33, leading: true),
-        Callout(id: "jawLeft", area: .jaw, anchor: CGPoint(x: 0.25, y: 0.79), labelY: 0.82, leading: true),
-        Callout(id: "nose", area: .nose, anchor: CGPoint(x: 0.53, y: 0.38), labelY: 0.33, leading: false),
-        Callout(id: "jawRight", area: .jaw, anchor: CGPoint(x: 0.75, y: 0.79), labelY: 0.82, leading: false),
+        Callout(id: "jawLeft", area: .jaw, anchor: CGPoint(x: 0.29, y: 0.817), labelY: 0.86, leading: true),
+        Callout(id: "nose", area: .nose, anchor: CGPoint(x: 0.54, y: 0.517), labelY: 0.26, leading: false),
+        Callout(id: "jawRight", area: .jaw, anchor: CGPoint(x: 0.71, y: 0.817), labelY: 0.86, leading: false),
     ]
 
     var body: some View {
+        VStack(spacing: DS.Spacing.sm) {
+            figure
+            wholeFacePill
+        }
+    }
+
+    /// Whole face is not a region of the map: it is the tag for "the face, no particular area".
+    private var wholeFacePill: some View {
+        let value = percents[.face] ?? nil
+        return HStack(spacing: 8) {
+            Circle().fill(SkinRamp.fillColour(percent: value)).frame(width: 12, height: 12)
+                .overlay(Circle().stroke(DS.Color.primaryText.opacity(0.25), lineWidth: 0.75))
+            Text("Whole face").font(DS.Font.label).foregroundColor(DS.Color.primaryText)
+            Text(value.map { "\($0)%" } ?? "–").font(DS.Font.label.weight(.bold).monospacedDigit())
+                .foregroundColor(DS.Color.primaryText)
+        }
+        .padding(.horizontal, 14).padding(.vertical, 8)
+        .background(Capsule().fill(DS.Color.cardBackground))
+        .overlay(Capsule().stroke(DS.Color.primaryText.opacity(0.18), lineWidth: 1))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Whole face")
+        .accessibilityValue(BodyMapView.spokenValue(value))
+    }
+
+    private var figure: some View {
         GeometryReader { geo in
             let w = geo.size.width
             let c = Self.calloutShare * w

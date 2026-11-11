@@ -48,7 +48,9 @@ final class ModeTagTests: XCTestCase {
         // Existing categories are unchanged, so stored tags keep their meaning.
         XCTAssertEqual(TagLibrary.tags[.other],
                        ["Poor Sleep", "Water Retention", "Hot Flashes", "Night Sweats", "Mild Cramping"])
-        XCTAssertEqual(TagLibrary.tags[.intimacy], ["Sex"])
+        XCTAssertEqual(TagLibrary.tags[.intimacy],
+                       ["Sex", "Protected", "Unprotected", "Oral", "Solo", "Orgasm",
+                        "High Libido", "Low Libido", "Painful Sex", "Spotting After Sex", "Affection"])
         XCTAssertEqual(TagLibrary.tags[.skin], [])
     }
 

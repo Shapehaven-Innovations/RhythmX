@@ -925,7 +925,7 @@ struct TagFormView: View {
                 ForEach(rows) { row in chip(row.pick) }
             }
             Text(category == .intimacy
-                 ? "Logged as a day tag. Counted together with Intercourse in Planning."
+                 ? "Sex is counted together with Intercourse in Planning. The other tags add detail and are left out of reports, sharing and notifications."
                  : "Not here? Type it in the search to add your own.")
                 .font(.footnote).foregroundColor(DS.Color.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)

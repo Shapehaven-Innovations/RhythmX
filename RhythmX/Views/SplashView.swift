@@ -11,17 +11,22 @@ struct SplashView: View {
     @EnvironmentObject var appSettings: AppSettings
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var active = -1
+    @State private var shown = false
 
     private let step = 0.55
 
     var body: some View {
         ZStack {
+            // The launch screen's own colour underneath, so a theme whose night page differs fades in from it.
+            Color("LaunchBackground").ignoresSafeArea()
             NightSceneBackground(animated: !reduceMotion)
+                .opacity(shown ? 1 : 0)
             WaveBackground(drift: true)
                 .frame(maxHeight: .infinity, alignment: .bottom)
                 .frame(height: 300)
                 .frame(maxHeight: .infinity, alignment: .bottom)
                 .ignoresSafeArea(edges: .bottom)
+                .opacity(shown ? 1 : 0)
             VStack(spacing: 12) {
                 MoonsWithHalo(active: active, size: 34)
                     .padding(.bottom, 12)
@@ -33,10 +38,13 @@ struct SplashView: View {
                     .foregroundColor(Color("LaunchSubtitle"))
             }
             .offset(y: -20)
+            .opacity(shown ? 1 : 0)
         }
         .environment(\.colorScheme, .dark)
         .accessibilityHidden(true)
         .task {
+            // The launch screen is only the night colour, so the scene fades in and the first thing seen moving.
+            withAnimation(.easeOut(duration: 0.3)) { shown = true }
             if reduceMotion {
                 try? await Task.sleep(nanoseconds: 600_000_000)
             } else {

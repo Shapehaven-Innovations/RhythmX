@@ -119,7 +119,7 @@ struct SkinTodayCard: View {
     private var face: some View {
         VStack(spacing: DS.Spacing.xs) {
             BodyMapView(side: .face, mode: .display(percentByArea: facePercents, showsLabels: false),
-                        width: Self.faceWidth)
+                        width: Self.faceWidth, wholeFaceFills: true)
             Text(faceCaption)
                 .font(DS.Font.caption)
                 .foregroundColor(DS.Color.secondaryText)

@@ -43,7 +43,10 @@ enum TagLibrary {
             "Vaginal Dryness", "Low Libido", "Heart Palpitations"
         ],
         .skin: [],
-        .intimacy: ["Sex"]
+        .intimacy: [
+            "Sex", "Protected", "Unprotected", "Oral", "Solo", "Orgasm",
+            "High Libido", "Low Libido", "Painful Sex", "Spotting After Sex", "Affection"
+        ]
     ]
 
     /// Categories in the order the tag form shows them for a mode. The mode's own category comes first;

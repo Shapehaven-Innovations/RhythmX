@@ -11,6 +11,9 @@ struct SettingsView: View {
     @EnvironmentObject var healthSync: HealthSync
     @EnvironmentObject var calendarSync: CalendarSync
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.openURL) private var openURL
+
+    private static let writeReviewURL = URL(string: "itms-apps://apps.apple.com/app/id6740507389?action=write-review")!
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var showManageSubscriptions = false
     @State private var healthDenied = false
@@ -500,6 +503,9 @@ struct SettingsView: View {
     private var linksCard: some View {
         VStack(spacing: 0) {
             NavigationLink { ShareRhythmView() } label: { linkRow("Share RhythmX") }
+            Divider()
+            Button { openURL(Self.writeReviewURL) } label: { linkRow("Rate RhythmX") }
+                .accessibilityHint("Opens the App Store to write a review.")
             Divider()
             Button { showWelcome = true } label: { linkRow("Replay welcome") }
                 .accessibilityHint("Shows the welcome pages again. Your entries and settings stay as they are.")

@@ -15,6 +15,11 @@ final class BodyMapTests: XCTestCase {
         CGRect(x: 12, y: 20, width: width, height: width * aspect(side))
     }
 
+    /// `Path.contains` is unreliable on tiny unit-space paths, so hit tests run at 1000x.
+    private func contains(_ region: BodyMapRegion, _ p: CGPoint) -> Bool {
+        region.path.applying(CGAffineTransform(scaleX: 1000, y: 1000)).contains(CGPoint(x: p.x * 1000, y: p.y * 1000))
+    }
+
     func testTitles() {
         XCTAssertEqual(BodyMapSide.face.title, "Face")
         XCTAssertEqual(BodyMapSide.front.title, "Body front")
@@ -42,7 +47,9 @@ final class BodyMapTests: XCTestCase {
         for side in BodyMapSide.allCases {
             let areas = BodyMapShapes.areas(for: side)
             XCTAssertEqual(areas.count, Set(areas).count, "\(side) areas repeat")
-            XCTAssertEqual(Set(areas), Set(BodyMapShapes.regions(for: side).map(\.area)))
+            // Whole face is a chip under the face map, not a region.
+            let drawn = Set(BodyMapShapes.regions(for: side).map(\.area))
+            XCTAssertEqual(Set(areas), side == .face ? drawn.union([.face]) : drawn)
         }
     }
 
@@ -57,19 +64,17 @@ final class BodyMapTests: XCTestCase {
         let face = BodyMapShapes.regions(for: .face)
         XCTAssertEqual(face.filter { $0.area == .cheeks }.count, 2)
         XCTAssertEqual(face.filter { $0.area == .jaw }.count, 2)
-        XCTAssertEqual(face.first { $0.id == "face.outline" }?.area, .face)
-        XCTAssertEqual(face.min { $0.sortPriority < $1.sortPriority }?.id, "face.outline")
+        XCTAssertNil(face.first { $0.area == .face }, "Whole face is a chip, not a region")
     }
 
-    func testRegionsDoNotOverlapExceptFaceOutline() {
+    func testRegionsDoNotOverlap() {
         for side in BodyMapSide.allCases {
             let regions = BodyMapShapes.regions(for: side)
             for i in 0..<40 {
                 for j in 0..<40 {
                     let p = CGPoint(x: (CGFloat(i) + 0.5) / 40, y: (CGFloat(j) + 0.5) / 40)
-                    let hits = regions.filter { $0.path.contains(p) }.map(\.id)
-                    let others = hits.filter { $0 != "face.outline" }
-                    XCTAssertLessThanOrEqual(others.count, 1, "\(side) overlap at \(p): \(hits)")
+                    let hits = regions.filter { contains($0, p) }.map(\.id)
+                    XCTAssertLessThanOrEqual(hits.count, 1, "\(side) overlap at \(p): \(hits)")
                 }
             }
         }
@@ -78,12 +83,10 @@ final class BodyMapTests: XCTestCase {
     func testLabelPointsLieInsideTheirRegion() {
         for side in BodyMapSide.allCases {
             for region in BodyMapShapes.regions(for: side) {
-                XCTAssertTrue(region.path.contains(region.labelPoint), region.id)
-                let others = BodyMapShapes.regions(for: side).filter {
-                    $0.id != region.id && $0.id != "face.outline" && region.id != "face.outline"
-                }
+                XCTAssertTrue(contains(region, region.labelPoint), region.id)
+                let others = BodyMapShapes.regions(for: side).filter { $0.id != region.id }
                 for other in others {
-                    XCTAssertFalse(other.path.contains(region.labelPoint), "\(region.id) label in \(other.id)")
+                    XCTAssertFalse(contains(other, region.labelPoint), "\(region.id) label in \(other.id)")
                 }
             }
         }
@@ -153,6 +156,26 @@ final class BodyMapTests: XCTestCase {
                 XCTAssertFalse(region.path.isEmpty, region.id)
                 XCTAssertTrue(unit.contains(region.path.boundingRect), region.id)
             }
+        }
+    }
+
+    func testPillsStayInTheUnitBoxAndOnlyTheSmallRegionsHaveOne() {
+        let unit = CGRect(x: 0, y: 0, width: 1, height: 1)
+        for side in [BodyMapSide.front, .back] {
+            for region in BodyMapShapes.regions(for: side) {
+                if let pill = region.pill { XCTAssertTrue(unit.contains(pill), region.id) }
+            }
+            XCTAssertNotNil(BodyMapShapes.regions(for: side).first { $0.area == .neck }?.pill)
+            XCTAssertNil(BodyMapShapes.regions(for: side).first { $0.area == .chest || $0.area == .back }?.pill)
+        }
+    }
+
+    func testFaceZonesCoverTheOutlineWithNoDeadBand() {
+        // Sample inside the face: every point belongs to a region (the old map left an unlabelled band).
+        let regions = BodyMapShapes.regions(for: .face)
+        for (x, y) in [(0.3, 0.3), (0.5, 0.45), (0.27, 0.45), (0.73, 0.45), (0.5, 0.7), (0.35, 0.75), (0.5, 0.95)] {
+            let p = CGPoint(x: x, y: y)
+            XCTAssertTrue(regions.contains { contains($0, p) }, "no region at \(p)")
         }
     }
 }

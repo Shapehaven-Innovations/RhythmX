@@ -168,8 +168,14 @@ struct SkinLogBody: View {
                 .padding(.horizontal, 12)
 
             BodyMapView(side: side,
-                        mode: .pick(selected: area, loggedToday: loggedAreas, onPick: { picked in animate { area = picked } }))
-                .frame(maxWidth: side == .face ? 280 : 200)
+                        mode: .pick(selected: area, loggedToday: loggedAreas, onPick: { picked in
+                            animate {
+                                area = picked
+                                // The head on the body map stands for the whole face: open the face map.
+                                if picked == .face && side != .face { side = .face }
+                            }
+                        }))
+                .frame(maxWidth: side == .face ? 300 : 340)
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, DS.Spacing.md)
 
@@ -182,9 +188,15 @@ struct SkinLogBody: View {
             .frame(maxWidth: .infinity)
             .accessibilityElement(children: .combine)
 
-            SheetChip(label: SkinTag.Area.other.rawValue, isSelected: area == .other) { animate { area = .other } }
-                .accessibilityHint("An area that is not on the map")
-                .frame(maxWidth: .infinity)
+            HStack(spacing: DS.Spacing.sm) {
+                if side == .face {
+                    SheetChip(label: "Whole face", isSelected: area == .face) { animate { area = .face } }
+                        .accessibilityHint("The whole face, not one area")
+                }
+                SheetChip(label: SkinTag.Area.other.rawValue, isSelected: area == .other) { animate { area = .other } }
+                    .accessibilityHint("An area that is not on the map")
+            }
+            .frame(maxWidth: .infinity)
 
             mapCard
         }

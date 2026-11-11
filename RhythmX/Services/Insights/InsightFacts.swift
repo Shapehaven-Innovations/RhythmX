@@ -86,7 +86,9 @@ struct InsightFacts: Codable, Equatable {
         let loggedToday = modeEvents
             .filter { calendar.startOfDay(for: $0.date) == todayStart }
             .reduce(0) { $0 + TagParser.split($1.tags).count }
-        let pattern = PatternFinder.findings(events: modeEvents, archivedBlocks: modeBlocks, mode: mode,
+        // Every finding is ranked first and the first surfaceable one wins, so intimacy tags (never surfaced)
+        // cannot crowd it out of the top three.
+        let pattern = PatternFinder.allFindings(events: modeEvents, archivedBlocks: modeBlocks, mode: mode,
                                              today: today, calendar: calendar)
             .first { isSurfaceable(raw: $0.tag) }
             .map { PatternFact(label: TagParser.label(for: $0.tag), sentence: "\($0.sentence), in \($0.evidence).") }

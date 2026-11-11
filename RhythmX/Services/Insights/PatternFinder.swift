@@ -259,7 +259,7 @@ enum PatternFinder {
 
     // MARK: - Findings
 
-    private static func allFindings(events: [Event], archivedBlocks: [ArchivedDataBlock], mode: TrackingMode,
+    static func allFindings(events: [Event], archivedBlocks: [ArchivedDataBlock], mode: TrackingMode,
                                     today: Date, calendar: Calendar) -> [PatternFinding] {
         switch mode {
         case .cycle, .planning:

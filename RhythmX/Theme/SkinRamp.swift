@@ -125,6 +125,21 @@ struct SkinRamp: Equatable {
         return DS.Color.adaptive(light: ramps.light[keyPath: keyPath], dark: ramps.dark[keyPath: keyPath])
     }
 
+    /// The figure behind the regions: ink mixed 10% into the card, so it reads on the card and on the page.
+    static var silhouetteColour: Color { mapTint(0.10) }
+    /// The same figure when it sits on the page (the pick map), where a card-based tint would vanish.
+    static var pageSilhouetteColour: Color { mapTint(0.14, onPage: true) }
+    /// A region with nothing logged: the same tint as the figure; the gaps between zones and the outline keep the shapes apart.
+    static var regionColour: Color { mapTint(0.10) }
+
+    private static func mapTint(_ amount: Double, onPage: Bool = false) -> Color {
+        let theme = DS.Theme.current
+        let light = onPage ? theme.light.page : theme.light.card
+        let dark = onPage ? theme.dark.page : theme.dark.card
+        return DS.Color.adaptive(light: RGB.mix(light, theme.light.ink, amount),
+                                 dark: RGB.mix(dark, theme.dark.ink, amount))
+    }
+
     static func fillColour(percent: Int?) -> Color {
         let ramps = current
         return DS.Color.adaptive(light: ramps.light.fill(percent: percent), dark: ramps.dark.fill(percent: percent))

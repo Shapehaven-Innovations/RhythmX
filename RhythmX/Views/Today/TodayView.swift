@@ -334,7 +334,7 @@ struct TodayView: View {
         let choices = QuickLogCardLogic.choices(mode: mode, phase: phase, events: events,
                                                 history: TagFormLogic.historyTags(phase: phase, blocks: cycleBlocks),
                                                 today: today, limit: InsightDetailContent.maxChips)
-        let patternPick = PatternFinder.findings(events: modeEvents, archivedBlocks: modeBlocks, mode: mode, today: today)
+        let patternPick = PatternFinder.allFindings(events: modeEvents, archivedBlocks: modeBlocks, mode: mode, today: today, calendar: .current)
             .first { InsightFacts.isSurfaceable(raw: $0.tag) }
             .map { TagFormLogic.pick(fromRaw: $0.tag) }
         let cards = ShareCardModel.cards(for: ShareCardInput(

@@ -74,6 +74,7 @@ struct MenopauseInsights: Equatable {
     private static func isSurfaced(_ raw: String) -> Bool {
         let parts = raw.split(separator: ":", maxSplits: 1)
         let category = parts.count == 2 ? parts[0].trimmingCharacters(in: .whitespaces) : ""
+        if category == TagCategory.intimacy.rawValue { return false }
         if category == TagCategory.menopause.rawValue || category == TagCategory.mood.rawValue { return true }
         return (TagLibrary.tags[.menopause] ?? []).contains(TagParser.label(for: raw))
     }
